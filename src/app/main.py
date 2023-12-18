@@ -1,21 +1,50 @@
-from fastapi import FastAPI
-from starlette.middleware.cors import CORSMiddleware
+import os
+import shutil
+
+import uvicorn
 
 from app.core.config import settings
-from app.api.api_v1.api import api_router
 
-app = FastAPI(
-    title=settings.PROJECT_NAME, openapi_url=f"{settings.API_V1_STR}/openapi.json"
-)
 
-# Set all CORS enabled origins
-if settings.BACKEND_CORS_ORIGINS:
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=[str(origin) for origin in settings.BACKEND_CORS_ORIGINS],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+# def set_multiproc_dir() -> None:
+#     """
+#     Sets mutiproc_dir env variable.
+#
+#     This function cleans up the multiprocess directory
+#     and recreates it. This actions are required by prometheus-client
+#     to share metrics between processes.
+#
+#     After cleanup, it sets two variables.
+#     Uppercase and lowercase because different
+#     versions of the prometheus-client library
+#     depend on different environment variables,
+#     so I've decided to export all needed variables,
+#     to avoid undefined behaviour.
+#     """
+#     shutil.rmtree(settings.prometheus_dir, ignore_errors=True)
+#     os.makedirs(settings.prometheus_dir, exist_ok=True)
+#     os.environ["prometheus_multiproc_dir"] = str(
+#         settings.prometheus_dir.expanduser().absolute(),
+#     )
+#     os.environ["PROMETHEUS_MULTIPROC_DIR"] = str(
+#         settings.prometheus_dir.expanduser().absolute(),
+#     )
+
+
+def main() -> None:
+    """Entrypoint of the application."""
+    # set_multiproc_dir()
+    print("LOZ", settings.WORKERS_COUNT)
+    uvicorn.run(
+        "app.application:get_app",
+        workers=settings.WORKERS_COUNT,
+        host=settings.HOST,
+        port=settings.PORT,
+        reload=settings.RELOAD,
+        log_level=settings.LOG_LEVEL.value.lower(),
+        factory=True,
     )
 
-app.include_router(api_router, prefix=settings.API_V1_STR)
+
+if __name__ == "__main__":
+    main()
