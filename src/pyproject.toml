@@ -21,6 +21,8 @@ celery = {extras = ["redis"], version = "^5.3.6"}
 raven = "^6.10.0"
 alembic = "^1.13.0"
 ujson = "^5.9.0"
+eventlet = "^0.33.3"
+gevent = "^23.9.1"
 
 
 [build-system]

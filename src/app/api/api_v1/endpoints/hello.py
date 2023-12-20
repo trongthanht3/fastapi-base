@@ -4,6 +4,7 @@ from fastapi import APIRouter, Body, Depends, HTTPException
 from fastapi.encoders import jsonable_encoder
 from app.core.config import settings
 from celeryApp.worker import get_time
+from celeryApp.celery_app import celery_app
 from celery.result import AsyncResult
 
 import logging
@@ -28,10 +29,8 @@ def _get_time(word: str):
 async def get_time_result(task_id: str):
     logger.info("get_time_result")
     print(task_id)
-    result = AsyncResult(task_id)
+    result = celery_app.AsyncResult(task_id)
     print(result.ready())
-    a = result.get()
-    print(a)
     if result.ready():
         return {"result": result.get()}
     else:
