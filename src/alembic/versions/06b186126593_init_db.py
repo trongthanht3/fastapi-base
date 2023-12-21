@@ -29,7 +29,7 @@ def upgrade() -> None:
     )
     op.create_table('session_msg',
     sa.Column('session_msg_id', sa.Integer(), nullable=False),
-    sa.Column('user_session_id', sa.String(), nullable=False),
+    sa.Column('user_session_id', sa.Integer(), nullable=False),
     sa.Column('user_msg_content', sa.String(), nullable=False),
     sa.Column('system_msg_content', sa.String(), nullable=True),
     sa.Column('create_at', sa.Date(), nullable=False),

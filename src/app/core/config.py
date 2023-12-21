@@ -90,6 +90,8 @@ class Settings(BaseSettings):
             port=values.get("RABBITMQ_PORT"),
         )
 
+    # LLM env
+    GOOGLE_API_KEY: str
 
 
 settings = Settings(_env_file=".env", _env_file_encoding="utf-8")

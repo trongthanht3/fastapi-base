@@ -1,7 +1,7 @@
 from typing import List
 from typing import Optional
 from sqlalchemy import ForeignKey
-from sqlalchemy import String, Boolean, Date
+from sqlalchemy import String, Boolean, Date, Integer
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
@@ -16,8 +16,8 @@ class Base(DeclarativeBase):
 class SessionMsg(Base):
     __tablename__ = "session_msg"
 
-    session_msg_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, nullable=False)
-    user_session_id: Mapped[str] = mapped_column(String(), ForeignKey(UserSession.user_session_id), nullable=False)
+    session_msg_id: Mapped[int] = mapped_column(Integer(), primary_key=True, autoincrement=True, nullable=False)
+    user_session_id: Mapped[int] = mapped_column(Integer(), ForeignKey(UserSession.user_session_id), nullable=False)
     user_msg_content: Mapped[str] = mapped_column(String(), nullable=False)
     system_msg_content: Mapped[str] = mapped_column(String(), nullable=True)
     create_at: Mapped[str] = mapped_column(Date(), nullable=False)

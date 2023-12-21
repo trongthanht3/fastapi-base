@@ -1,7 +1,6 @@
 from celery import Celery
 from app.core.config import settings
 
-print("Connecting to RabbitMQ:", settings.RABBITMQ_URI.unicode_string())
 celery_app = Celery(
     "worker",
     broker=settings.RABBITMQ_URI.unicode_string() + "//",

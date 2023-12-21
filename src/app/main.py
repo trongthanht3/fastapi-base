@@ -34,7 +34,6 @@ from app.core.config import settings
 def main() -> None:
     """Entrypoint of the application."""
     # set_multiproc_dir()
-    print("LOZ", settings.WORKERS_COUNT)
     uvicorn.run(
         "app.application:get_app",
         workers=settings.WORKERS_COUNT,
