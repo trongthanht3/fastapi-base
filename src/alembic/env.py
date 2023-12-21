@@ -5,6 +5,12 @@ from sqlalchemy import pool
 
 from alembic import context
 
+import os
+from app.core.config import settings
+
+from app.db.models.user_session import UserSession
+from app.db.models.session_msg import SessionMsg
+
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
@@ -18,7 +24,8 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-target_metadata = None
+target_metadata = [UserSession.metadata, SessionMsg.metadata]
+
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
@@ -26,11 +33,12 @@ target_metadata = None
 # ... etc.
 
 def get_url():
-    user = os.getenv("POSTGRES_USER", "postgres")
-    password = os.getenv("POSTGRES_PASSWORD", "")
-    server = os.getenv("POSTGRES_SERVER", "db")
-    db = os.getenv("POSTGRES_DB", "app")
-    return f"postgresql+psycopg://{user}:{password}@{server}/{db}"
+    user = settings.POSTGRES_USER
+    password = settings.POSTGRES_PASSWORD
+    server = settings.POSTGRES_SERVER
+    db = settings.POSTGRES_DB
+    print(f"URL: postgresql+psycopg2://{user}:{password}@{server}/{db}")
+    return f"postgresql+psycopg2://{user}:{password}@{server}/{db}"
 
 
 def run_migrations_offline() -> None:
@@ -45,7 +53,7 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    url = config.get_main_option("sqlalchemy.url")
+    url = get_url()
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -64,10 +72,10 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
+    configuration = config.get_section(config.config_ini_section)
+    configuration["sqlalchemy.url"] = get_url()
     connectable = engine_from_config(
-        config.get_section(config.config_ini_section, {}),
-        prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
+        configuration, prefix="sqlalchemy.", poolclass=pool.NullPool,
     )
 
     with connectable.connect() as connection:

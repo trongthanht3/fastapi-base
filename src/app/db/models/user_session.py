@@ -1,0 +1,24 @@
+from typing import List
+from typing import Optional
+from sqlalchemy import ForeignKey
+from sqlalchemy import String, Boolean, INT, Date
+from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.orm import Mapped
+from sqlalchemy.orm import mapped_column
+from sqlalchemy.orm import relationship
+
+
+class Base(DeclarativeBase):
+    pass
+
+
+class UserSession(Base):
+    __tablename__ = "user_session"
+
+    user_session_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, nullable=False)
+    user_id: Mapped[str] = mapped_column(String(), nullable=False)
+    transcribe_id: Mapped[str] = mapped_column(String(), nullable=False)
+    create_at: Mapped[str] = mapped_column(Date(), nullable=True)
+
+    def __repr__(self) -> str:
+        return f"UserSession(user_session_id={self.user_session_id!r}, user_id={self.user_id!r}, transcribe_id={self.transcribe_id!r}, create_at={self.create_at!r})"
