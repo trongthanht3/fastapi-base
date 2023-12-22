@@ -1,7 +1,7 @@
 from typing import List
 from typing import Optional
 from sqlalchemy import ForeignKey
-from sqlalchemy import String, Boolean, Date, Integer
+from sqlalchemy import String, Boolean, Date, Integer, DateTime
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
@@ -20,7 +20,7 @@ class SessionMsg(Base):
     user_session_id: Mapped[int] = mapped_column(Integer(), ForeignKey(UserSession.user_session_id), nullable=False)
     user_msg_content: Mapped[str] = mapped_column(String(), nullable=False)
     system_msg_content: Mapped[str] = mapped_column(String(), nullable=True)
-    create_at: Mapped[str] = mapped_column(Date(), nullable=False)
+    create_at: Mapped[str] = mapped_column(DateTime(), nullable=False)
     feedback: Mapped[bool] = mapped_column(Boolean(), nullable=True)
     feedback_content: Mapped[str] = mapped_column(String(), nullable=True)
 

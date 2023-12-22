@@ -14,12 +14,12 @@ class BaseResponse(BaseModel):
     content: str
 
 
-class SuccessResponse(BaseModel):
+class MessageSuccessResponse(BaseModel):
     version: str
     success: bool
     created_at: str
     data: BaseResponse
 
-class SessionCreateResponse(BaseModel):
+class SessionCreateSuccessResponse(BaseModel):
     session_id: str
     created_at: str

@@ -1,8 +1,11 @@
+import pickle
+
 from celeryApp.celery_app import celery_app
 import datetime
 import redis
 from sqlalchemy.orm import sessionmaker
 from app.db.engine import sqlalchemy_engine
+from app.db.models.user_session import UserSession
 # client_sentry = Client(settings.SENTRY_DSN)
 
 redis_client = redis.Redis(host='localhost', port=6379, db=0)
@@ -20,13 +23,15 @@ def get_time(word: str) -> str:
     return f"{word}/{datetime.datetime.now()}"
 
 @celery_app.task(acks_late=True)
-def commit_to_db(sql_obj) -> int:
+def commit_to_db(sql_obj):
     try:
+        # print(sql_obj)
         session.add(sql_obj)
         session.commit()
         session.flush()
         session.refresh(sql_obj)
-        return sql_obj.id
+        print("I got here")
+        return sql_obj
     except Exception as e:
         session.rollback()
         raise e

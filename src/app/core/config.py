@@ -15,6 +15,7 @@ class LogLevel(str, enum.Enum):  # noqa: WPS600
     FATAL = "FATAL"
 
 class Settings(BaseSettings):
+    API_VERSION: str
     API_V1_STR: str = "/api/v1"
     SECRET_KEY: str = secrets.token_urlsafe(32)
     HOST: str
