@@ -2,7 +2,8 @@ import enum
 import secrets
 from typing import Any, Dict, List, Optional, Union
 from pydantic_settings import BaseSettings
-from pydantic import AnyHttpUrl, EmailStr, HttpUrl, PostgresDsn, validator, AmqpDsn
+from pydantic import AnyHttpUrl, HttpUrl, PostgresDsn, validator, AmqpDsn, RedisDsn, Extra
+
 
 class LogLevel(str, enum.Enum):  # noqa: WPS600
     """Possible log levels."""
@@ -14,6 +15,7 @@ class LogLevel(str, enum.Enum):  # noqa: WPS600
     ERROR = "ERROR"
     FATAL = "FATAL"
 
+
 class Settings(BaseSettings):
     API_VERSION: str
     API_V1_STR: str = "/api/v1"
@@ -23,6 +25,12 @@ class Settings(BaseSettings):
     RELOAD: bool = False
     WORKERS_COUNT: int
 
+    DOMAIN: str
+    DOCKER_IMAGE_BACKEND: str
+    DOCKER_IMAGE_CELERYWORKER: str
+    DOCKER_IMAGE_FRONTEND: str
+    DOCKER_IMAGE_NEW_FRONTEND: str
+    PGADMIN_LISTEN_PORT: int
 
     LOG_LEVEL: LogLevel = LogLevel.INFO
     # 60 minutes * 24 hours * 8 days = 8 days
@@ -70,6 +78,7 @@ class Settings(BaseSettings):
             port=values.get("POSTGRES_PORT"),
             path=f"{values.get('POSTGRES_DB') or ''}",
         )
+
     class Config:
         case_sensitive = True
 
@@ -93,6 +102,24 @@ class Settings(BaseSettings):
 
     # LLM env
     GOOGLE_API_KEY: str
+
+    # Redis env
+    REDIS_HOST: str
+    REDIS_PORT: int
+    REDIS_URI: Optional[RedisDsn] = None
+
+    @validator("REDIS_URI", pre=True)
+    def assemble_redis_connection(cls, v: Optional[str], values: Dict[str, Any]) -> Any:
+        if isinstance(v, str):
+            return v
+        return RedisDsn.build(
+            scheme="redis",
+            host=values.get("REDIS_HOST"),
+            port=values.get("REDIS_PORT"),
+        )
+
+    class Config:
+        extra = Extra.allow
 
 
 settings = Settings(_env_file=".env", _env_file_encoding="utf-8")

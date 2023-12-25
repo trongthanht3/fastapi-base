@@ -5,7 +5,7 @@ from app.core.config import settings
 celery_app = Celery(
     "worker",
     broker=settings.RABBITMQ_URI.unicode_string() + "//",
-    backend="redis://localhost:6379/0",
+    backend=settings.REDIS_URI.unicode_string()
 )
 # registry.enable("pickle")  # celery accept pickle
 # registry.enable("application/x-python-serialize")  # celery accept pickle
