@@ -1,0 +1,104 @@
+version: '3.9'
+services:
+  db:
+    image: postgres:15
+    volumes:
+      - app-db-data:/var/lib/postgresql/data
+    env_file:
+      - .env
+    environment:
+        - POSTGRES_DB=${POSTGRES_DB}
+        - POSTGRES_USER=${POSTGRES_USER}
+        - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    ports:
+      - 5432:5432
+    restart: always
+    healthcheck:
+        test: ['pg_isready', '-U', '${POSTGRES_USER}']
+        interval: 10s
+        timeout: 5s
+        retries: 5
+
+  pgadmin:
+    image: dpage/pgadmin4:5.7
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_DEFAULT_EMAIL}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_DEFAULT_PASSWORD}
+    ports:
+      - 8080:80
+    networks:
+      - default
+    depends_on:
+      - db
+    env_file:
+      - .env
+
+  redis:
+    image: redis:7
+    restart: always
+    ports:
+      - 6379:6379
+    networks:
+      - default
+
+  rabbitmq:
+    image: bitnami/rabbitmq:3.9
+    restart: always
+    ports:
+      - 15671:15671
+      - 15672:15672
+      - 25672:25672
+      - 4369:4369
+      - 5551:5551
+      - 5552:5552
+      - 5671:5671
+      - 5672:5672
+    environment:
+      - RABBITMQ_USERNAME=${RABBITMQ_USERNAME}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+      - RABBITMQ_VHOST=${RABBITMQ_VHOST}
+      - RABBITMQ_MANAGEMENT_ALLOW_WEB_ACCESS=${RABBITMQ_MANAGEMENT_ALLOW_WEB_ACCESS}
+    healthcheck:
+      test: rabbitmq-diagnostics check_running -q
+      interval: 3s
+      timeout: 3s
+      retries: 50
+
+  celeryworker:
+    image: ${DOCKER_IMAGE_CELERYWORKER}:${TAG:-latest}
+    depends_on:
+      - db
+      - rabbitmq
+      - redis
+    env_file:
+      - .env
+    environment:
+      - SERVER_NAME=${DOMAIN?Variable not set}
+      - SERVER_HOST=https://${DOMAIN?Variable not set}
+    build:
+      context: ../
+      dockerfile: /docker/celeryworker.dockerfile
+      args:
+        INSTALL_DEV: ${INSTALL_DEV-false}
+
+  backend:
+#    image: '${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG-latest}'
+    depends_on:
+      - db
+      - celeryworker
+    env_file:
+      - .env
+    environment:
+      - SERVER_NAME=${DOMAIN?Variable not set}
+      - SERVER_HOST=https://${DOMAIN?Variable not set}
+    ports:
+      - 8000:8000
+    build:
+      context: ../
+      dockerfile: /docker/backend.dockerfile
+      args:
+        INSTALL_DEV: ${INSTALL_DEV-false}
+
+volumes:
+  app-db-data:
+    driver: local
