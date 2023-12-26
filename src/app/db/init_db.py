@@ -2,7 +2,6 @@ from sqlmodel import Session, select
 
 # from app import crud
 from app.core.config import settings
-from app.models import User, UserCreate  # noqa: F401
 
 # make sure all SQLModel models are imported (app.models) before initializing DB
 # otherwise, SQLModel might fail to initialize relationships properly

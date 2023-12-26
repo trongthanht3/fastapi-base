@@ -91,6 +91,8 @@ services:
     environment:
       - SERVER_NAME=${DOMAIN?Variable not set}
       - SERVER_HOST=https://${DOMAIN?Variable not set}
+    ports:
+      - 8000:8000
     build:
       context: ../
       dockerfile: /docker/backend.dockerfile
