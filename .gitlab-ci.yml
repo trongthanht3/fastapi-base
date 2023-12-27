@@ -13,7 +13,7 @@ build-dev:
   script:
     - TAG=dev sh ./scripts/build-push.sh
   only:
-    - dev
+    - develop
   tags:
     - build
 
@@ -44,7 +44,7 @@ deploy-dev:
   environment:
     name: development
   only:
-    - dev
+    - develop
   tags:
     - swarm
     - dev
