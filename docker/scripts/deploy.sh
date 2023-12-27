@@ -5,7 +5,7 @@ set -e
 
 TAG=${TAG?Variable not set} \
 docker-compose \
--f docker-compose.yml \
+-f ./docker/docker-compose.yml \
 config > docker-stack.yml
 
 docker-auto-labels docker-stack.yml

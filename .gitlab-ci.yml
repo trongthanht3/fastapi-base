@@ -11,7 +11,8 @@ stages:
 build-dev:
   stage: build
   script:
-    - TAG=dev sh ./scripts/build-push.sh
+    - cat $ENV_FILE_DEV >> ./docker/.env
+    - TAG=dev sh ./docker/scripts/build-push.sh
   only:
     - develop
   tags:
@@ -20,7 +21,8 @@ build-dev:
 build-stag:
   stage: build
   script:
-    - TAG=stag sh ./scripts/build-push.sh
+    - cat $ENV_FILE_STAG >> ./docker/.env
+    - TAG=stag sh ./docker/scripts/build-push.sh
   only:
     - master
   tags:
@@ -29,7 +31,8 @@ build-stag:
 build-prod:
   stage: build
   script:
-    - TAG=prod FRONTEND_ENV=production sh ./scripts/build-push.sh
+    - cat $ENV_FILE_PROD >> ./docker/.env
+    - TAG=prod sh ./docker/scripts/build-push.sh
   only:
     - production
   tags:
@@ -38,9 +41,10 @@ build-prod:
 deploy-dev:
   stage: deploy
   script:
+    - cat $ENV_FILE_DEV >> ./docker/.env
     - >
       TAG=dev
-      sh ./scripts/deploy.sh
+      sh ./docker/scripts/deploy.sh
   environment:
     name: development
   only:
@@ -54,7 +58,7 @@ deploy-stag:
   script:
     - >
       TAG=stag
-      sh ./scripts/deploy.sh
+      sh ./docker/scripts/deploy.sh
   environment:
     name: staging
   only:
