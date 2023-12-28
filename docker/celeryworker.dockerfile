@@ -24,7 +24,7 @@ RUN bash -c "if [ $INSTALL_JUPYTER == 'true' ] ; then pip install jupyterlab ; f
 ENV C_FORCE_ROOT=1
 
 COPY /src/ /
-COPY /docker/.env /.env
+COPY /.env /.env
 WORKDIR /
 
 ENV PYTHONPATH=/
