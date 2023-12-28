@@ -25,13 +25,13 @@ def get_time(word: str) -> str:
 @celery_app.task(acks_late=True)
 def commit_to_db(sql_obj):
     try:
-        # print(sql_obj)
         session.add(sql_obj)
         session.commit()
         session.flush()
         session.refresh(sql_obj)
-        print("I got here")
         return sql_obj
     except Exception as e:
         session.rollback()
         raise e
+    finally:
+        session.close()

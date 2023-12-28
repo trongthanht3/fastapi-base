@@ -23,13 +23,13 @@ class GeminiChatSession:
         :param language_code:
         :return:
         """
-        if language_code == LANGUAGES.ENGLISH:
-            self.language_code = LANGUAGES.ENGLISH
+        if language_code == LANGUAGES.ENGLISH.value:
+            self.language_code = LANGUAGES.ENGLISH.value
             self.memory.chat_memory.add_user_message(PROMPTS.INSTRUCT_ENGLISH)
             self.memory.chat_memory.add_ai_message(PROMPTS.INSTRUCT_ENGLISH)
             self.chat.prompt = PROMPTS.ENGLISH_PROMPT
-        elif language_code == LANGUAGES.JAPANESE:
-            self.language_code = LANGUAGES.JAPANESE
+        elif language_code == LANGUAGES.JAPANESE.value:
+            self.language_code = LANGUAGES.JAPANESE.value
             self.memory.chat_memory.add_user_message(PROMPTS.INSTRUCT_JAPANESE)
             self.memory.chat_memory.add_ai_message(PROMPTS.INSTRUCT_JAPANESE)
             self.chat.prompt = PROMPTS.JAPANESE_PROMPT
@@ -47,7 +47,6 @@ class GeminiChatSession:
         self.session_id = None
 
     def load_message(self, messages):
-        print("base prompt", self.chat.memory)
         for mes_pair in messages:
             self.chat.memory.chat_memory.add_user_message(mes_pair[0])
             self.chat.memory.chat_memory.add_ai_message(mes_pair[1])

@@ -1,0 +1,82 @@
+image: tiangolo/docker-with-compose
+
+before_script:
+  - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
+  - pip install docker-auto-labels
+
+stages:
+  - build
+  - deploy
+
+build-dev:
+  stage: build
+  script:
+    - cat $ENV_FILE_DEV >> ./docker/.env
+    - TAG=dev sh ./docker/scripts/build-push.sh
+  only:
+    - develop
+  tags:
+    - build
+
+build-stag:
+  stage: build
+  script:
+    - cat $ENV_FILE_STAG >> ./docker/.env
+    - TAG=stag sh ./docker/scripts/build-push.sh
+  only:
+    - master
+  tags:
+    - build
+
+build-prod:
+  stage: build
+  script:
+    - cat $ENV_FILE_PROD >> ./docker/.env
+    - TAG=prod sh ./docker/scripts/build-push.sh
+  only:
+    - production
+  tags:
+    - build
+
+deploy-dev:
+  stage: deploy
+  script:
+    - cat $ENV_FILE_DEV >> ./docker/.env
+    - >
+      TAG=dev
+      sh ./docker/scripts/deploy.sh
+  environment:
+    name: development
+  only:
+    - develop
+  tags:
+    - swarm
+    - dev
+
+deploy-stag:
+  stage: deploy
+  script:
+    - >
+      TAG=stag
+      sh ./docker/scripts/deploy.sh
+  environment:
+    name: staging
+  only:
+    - master
+  tags:
+    - swarm
+    - stag
+
+deploy-prod:
+  stage: deploy
+  script:
+    - >
+      TAG=prod
+      sh ./scripts/deploy.sh
+  environment:
+    name: production
+  only:
+    - production
+  tags:
+    - swarm
+    - prod

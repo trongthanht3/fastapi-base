@@ -82,7 +82,7 @@ services:
         INSTALL_DEV: ${INSTALL_DEV-false}
 
   backend:
-#    image: '${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG-latest}'
+    image: 10.0.1.185:5000/jfrog/jfc-mes-ai:latest
     depends_on:
       - db
       - celeryworker
