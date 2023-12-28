@@ -14,7 +14,7 @@ services:
       - 5432:5432
     restart: always
     healthcheck:
-        test: ['pg_isready', '-U', '${POSTGRES_USER}']
+        test: ['CMD-SHELL', 'pg_isready', '-U', '${POSTGRES_USER}']
         interval: 10s
         timeout: 5s
         retries: 5
@@ -76,15 +76,37 @@ services:
       - SERVER_NAME=${DOMAIN?Variable not set}
       - SERVER_HOST=https://${DOMAIN?Variable not set}
     build:
-      context: ../
-      dockerfile: /docker/celeryworker.dockerfile
+      context: ./
+      dockerfile: ./docker/celeryworker.dockerfile
       args:
         INSTALL_DEV: ${INSTALL_DEV-false}
 
-  backend:
-    image: 10.0.1.185:5000/jfrog/jfc-mes-ai:latest
+  celeryflower:
+    image: ${DOCKER_IMAGE_FLOWER}:${TAG:-latest}
     depends_on:
       - db
+      - rabbitmq
+      - redis
+    ports:
+      - 5555:5555
+    env_file:
+      - .env
+    environment:
+      - SERVER_NAME=${DOMAIN?Variable not set}
+      - SERVER_HOST=https://${DOMAIN?Variable not set}
+    build:
+      context: ./
+      dockerfile: ./docker/celeryworker.dockerfile
+      args:
+        INSTALL_DEV: ${INSTALL_DEV-false}
+    command: ['celery', '-A', 'celeryApp.worker', 'flower', '-l', 'info']
+
+  backend:
+    image: ${DOCKER_IMAGE_BACKEND}:${TAG:-latest}
+    depends_on:
+      - db
+      - rabbitmq
+      - redis
       - celeryworker
     env_file:
       - .env
@@ -92,10 +114,10 @@ services:
       - SERVER_NAME=${DOMAIN?Variable not set}
       - SERVER_HOST=https://${DOMAIN?Variable not set}
     ports:
-      - 8000:8000
+      - 8100:8100
     build:
-      context: ../
-      dockerfile: /docker/backend.dockerfile
+      context: ./
+      dockerfile: ./docker/backend.dockerfile
       args:
         INSTALL_DEV: ${INSTALL_DEV-false}
 

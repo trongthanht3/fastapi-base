@@ -5,5 +5,5 @@ set -e
 
 TAG=${TAG?Variable not set} \
 docker-compose \
--f ./docker/docker-compose.yml \
+-f ./docker-compose.yml \
 build
