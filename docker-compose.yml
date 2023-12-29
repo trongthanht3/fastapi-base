@@ -65,7 +65,7 @@ services:
       retries: 50
 
   celeryworker:
-    image: ${DOCKER_IMAGE_CELERYWORKER}:${TAG:-latest}
+    image: ${DOCKER_IMAGE_CELERYWORKER}:latest
     depends_on:
       - db
       - rabbitmq
@@ -82,7 +82,7 @@ services:
         INSTALL_DEV: ${INSTALL_DEV-false}
 
   celeryflower:
-    image: ${DOCKER_IMAGE_FLOWER}:${TAG:-latest}
+    image: ${DOCKER_IMAGE_FLOWER}:latest
     depends_on:
       - db
       - rabbitmq
@@ -102,7 +102,7 @@ services:
     command: ['celery', '-A', 'celeryApp.worker', 'flower', '-l', 'info']
 
   backend:
-    image: ${DOCKER_IMAGE_BACKEND}:${TAG:-latest}
+    image: ${DOCKER_IMAGE_BACKEND}:latest
     depends_on:
       - db
       - rabbitmq
