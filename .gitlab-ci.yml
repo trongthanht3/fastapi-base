@@ -1,0 +1,75 @@
+image: tiangolo/docker-with-compose
+
+variables:
+  DOCKER_HOST: tcp://docker:2375
+  DOCKER_TLS_CERTDIR: ""
+  DOCKER_OPTS: "--insecure-registry $CI_REGISTRY"
+
+services:
+   - name: docker:dind
+     alias: docker
+     # Change insecure-registry to your registry
+     command: ['--insecure-registry=10.0.1.185:5000']
+
+before_script:
+  - docker info
+  - echo $CI_JOB_TOKEN
+  - echo $CI_REGISTRY
+  - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
+  - docker swarm init
+
+stages:
+  - build
+  - deploy
+
+build-dev:
+  stage: build
+  script:
+    - cat $ENV_FILE_DEV >> .env
+    - DOCKER_IMAGE_BACKEND=$DOCKER_IMAGE_BACKEND TAG=dev sh ./docker/scripts/build-push.sh
+  only:
+    - develop
+  tags:
+    - build
+
+deploy-dev-server:
+  stage: deploy
+  only:
+    - develop
+  before_script:
+    - apk update && apk add openssh-client bash
+  script:
+    - cat $ENV_FILE_DEV >> .env
+    - cat .env
+    - eval $(ssh-agent -s)
+
+    - bash -c 'ssh-add <(echo "$SSH_PRIVATE_KEY")'
+
+    - mkdir -p ~/.ssh
+
+    - ssh-keyscan -H $SSH_SERVER >> ~/.ssh/known_hosts
+
+    - chmod 644 ~/.ssh/known_hosts
+
+    - scp -r * $SSH_USER@$SSH_SERVER:~/temp/
+    - scp .env $SSH_USER@$SSH_SERVER:~/temp/.env
+
+    - >
+      ssh $SSH_USER@$SSH_SERVER
+      "docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY;
+      cd ~;
+      mkdir -p $CI_PROJECT_NAME;
+      cd $CI_PROJECT_NAME;
+      mkdir -p app_repo;
+      cd app_repo;
+      cp ~/temp/.env ./.env;
+      cp -r ~/temp/* . && rm -rf ~/temp/*;
+      docker-compose down;
+      docker pull ${DOCKER_IMAGE_BACKEND};
+      docker-compose up -d;
+      docker image prune -f;
+      exit;"
+  tags:
+    - swarm
+    - dev
+    - deploy
