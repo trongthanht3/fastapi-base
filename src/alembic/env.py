@@ -37,7 +37,6 @@ def get_url():
     password = settings.POSTGRES_PASSWORD
     server = settings.POSTGRES_SERVER
     db = settings.POSTGRES_DB
-    print(f"URL: postgresql+psycopg2://{user}:{password}@{server}/{db}")
     return f"postgresql+psycopg2://{user}:{password}@{server}/{db}"
 
 

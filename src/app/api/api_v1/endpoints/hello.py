@@ -27,10 +27,7 @@ def _get_time(word: str):
 
 @router.get("/get_time/{task_id}")
 async def get_time_result(task_id: str):
-    logger.info("get_time_result")
-    print(task_id)
     result = celery_app.AsyncResult(task_id)
-    print(result.ready())
     if result.ready():
         return {"result": result.get()}
     else:
