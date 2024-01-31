@@ -25,7 +25,7 @@ eventlet = "^0.33.3"
 gevent = "^23.9.1"
 langchain = "^0.0.352"
 langchain-google-genai = "^0.0.5"
-pillow = "^10.1.0"
+pillow = "^10.2.0"
 flower = "^2.0.1"
 
 
