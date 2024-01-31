@@ -1,24 +1,17 @@
-from typing import Annotated, Any, List
 import uuid
 
-from fastapi import APIRouter, Body, Depends, HTTPException
+from fastapi import APIRouter, HTTPException
 from app.core.llm.google_gemini import GeminiChatSession
 from app.schemas.google_gemini import GoogleGeminiInput
 from app.schemas.base_schemas import BaseInput, MessageSuccessResponse, SessionCreateSuccessResponse, BaseResponse
 from app.db.models.session_msg import SessionMsg
 from app.db.models.user_session import UserSession
 from datetime import datetime
-from app.utils.constants import LANGUAGES
-from fastapi.encoders import jsonable_encoder
 from app.core.config import settings
-from celeryApp.worker import get_time
-from celery.result import AsyncResult
 from celeryApp.celery_app import celery_app
 from celeryApp.worker import commit_to_db
 from app.db.engine import sqlalchemy_engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy import String, Date
-import pickle
 import logging
 
 logger = logging.getLogger(__name__)
@@ -83,7 +76,7 @@ def _send_message(item: BaseInput) -> MessageSuccessResponse:
     new_message.system_msg_content = system_response
     commit_task = commit_to_db.delay(new_message)
     new_message = celery_app.AsyncResult(commit_task.id).get()
-    logger.info(f"New message from {item.session_id}")
+    logger.info(f"New message created: {new_message}")
 
     return MessageSuccessResponse(version=settings.API_VERSION,
                                   success=True,
@@ -91,6 +84,7 @@ def _send_message(item: BaseInput) -> MessageSuccessResponse:
                                   data=BaseResponse(status=200,
                                                     session_id=item.session_id,
                                                     content=system_response))
+
 
 @router.get("/chat_history", status_code=200)
 def _get_chat_history(session_id: str):
@@ -121,6 +115,5 @@ def _get_chat_history(session_id: str):
                                                    data=BaseResponse(status=200,
                                                                      session_id=session_id,
                                                                      content=pair_msg.system_msg_content)))
-
 
     return chat_history

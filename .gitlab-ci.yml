@@ -19,8 +19,16 @@ before_script:
   - docker swarm init
 
 stages:
+  - lint
   - build
   - deploy
+
+flake8:
+  stage: lint
+  script:
+    - >
+      cd src;
+      flake8 .
 
 build-dev:
   stage: build

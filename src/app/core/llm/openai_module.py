@@ -7,6 +7,7 @@ from langchain_openai import ChatOpenAI
 
 os.environ["OPENAI_API_KEY"] = settings.OPENAI_API_KEY
 
+
 class OpenAIChatSession:
     def __init__(self, session_id: str):
         self.session_id = None

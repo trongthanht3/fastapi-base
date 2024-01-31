@@ -50,7 +50,7 @@ To start development environment, run the following command:
 ```shell
 cd src
 poetry install
-``` 
+```
 ```shell
 # Please active Poetry virtual environment before running the following command
 # Start celery worker
@@ -72,7 +72,7 @@ Please add these variables to Gitlab CI/CD:
 - `CI_REGISTRY`: Gitlab registry
 - `DOCKER_IMAGE_BACKEND`: Docker image name for backend (eg: `registry.gitlab.com/username/project_name/backend`)
 - `ENV_FILE_DEV` (File): Environment variables file for development (eg: `.env.dev`)
-- `GIT_REPO`: Current git repository 
+- `GIT_REPO`: Current git repository
 - `SSH_PRIVATE_KEY`: SSH private key that added to deployment server
 - `SSH_SERVER`: Deployment server
 - `SSH_USER`: Deployment user

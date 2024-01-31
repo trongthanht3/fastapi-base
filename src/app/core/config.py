@@ -79,9 +79,6 @@ class Settings(BaseSettings):
             path=f"{values.get('POSTGRES_DB') or ''}",
         )
 
-    class Config:
-        case_sensitive = True
-
     RABBITMQ_USERNAME: str
     RABBITMQ_PASSWORD: str
     RABBITMQ_HOST: str
@@ -102,6 +99,7 @@ class Settings(BaseSettings):
 
     # LLM env
     GOOGLE_API_KEY: str
+    OPENAI_API_KEY: str
 
     # Redis env
     REDIS_HOST: str
@@ -120,6 +118,7 @@ class Settings(BaseSettings):
 
     class Config:
         extra = Extra.allow
+        case_sensitive = True
 
 
 settings = Settings(_env_file=".env", _env_file_encoding="utf-8")

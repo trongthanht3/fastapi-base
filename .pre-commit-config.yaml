@@ -10,4 +10,4 @@ repos:
     rev: 7.0.0
     hooks:
     -   id: flake8
-        args: [--config=./src/.flake8]
+        args: ["--config=src/.flake8"]
