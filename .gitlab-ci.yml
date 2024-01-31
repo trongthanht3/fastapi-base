@@ -17,10 +17,19 @@ before_script:
   - echo $CI_REGISTRY
   - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
   - docker swarm init
+  - pip install flake8
 
 stages:
+  - lint
   - build
   - deploy
+
+flake8:
+  stage: lint
+  script:
+    - >
+      cd src;
+      flake8 .
 
 build-dev:
   stage: build

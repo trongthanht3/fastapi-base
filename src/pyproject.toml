@@ -27,6 +27,10 @@ langchain = "^0.0.352"
 langchain-google-genai = "^0.0.5"
 pillow = "^10.1.0"
 flower = "^2.0.1"
+openai = "^1.9.0"
+langchain-openai = "^0.0.3"
+flake8 = "^7.0.0"
+pre-commit = "^3.6.0"
 
 
 [build-system]

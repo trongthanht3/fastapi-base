@@ -1,7 +1,7 @@
-from sqlmodel import Session, select
+from sqlmodel import Session
 
 # from app import crud
-from app.core.config import settings
+# from app.core.config import settings
 
 # make sure all SQLModel models are imported (app.models) before initializing DB
 # otherwise, SQLModel might fail to initialize relationships properly

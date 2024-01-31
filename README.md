@@ -1,8 +1,17 @@
-# FastAPI Template
+# FastAPI Template for LLMs
 
 ## Introduction
 
-- FastAPI Template for building API with FastAPI framework.
+- FastAPI Template for fast building LLMs API using FastAPI and Langchain
+- Support:
+    - [x] FastAPI application
+    - [x] Celery worker
+    - [x] PostgreSQL
+    - [x] pgAdmin
+    - [x] RabbitMQ
+    - [x] Redis
+
+**Note**: This template is not ready for production.
 
 ## Documentation
 
@@ -41,7 +50,7 @@ To start development environment, run the following command:
 ```shell
 cd src
 poetry install
-``` 
+```
 ```shell
 # Please active Poetry virtual environment before running the following command
 # Start celery worker
@@ -63,7 +72,7 @@ Please add these variables to Gitlab CI/CD:
 - `CI_REGISTRY`: Gitlab registry
 - `DOCKER_IMAGE_BACKEND`: Docker image name for backend (eg: `registry.gitlab.com/username/project_name/backend`)
 - `ENV_FILE_DEV` (File): Environment variables file for development (eg: `.env.dev`)
-- `GIT_REPO`: Current git repository 
+- `GIT_REPO`: Current git repository
 - `SSH_PRIVATE_KEY`: SSH private key that added to deployment server
 - `SSH_SERVER`: Deployment server
 - `SSH_USER`: Deployment user
@@ -86,6 +95,11 @@ services:
 |----------------| --- | --- |
 | `/`            | GET | Hello world |
 | `/api/v1/docs` | | Swagger UI |
+
+## TODO
+- [ ] Traefik
+- [ ] Testing
+- [ ] OAuth2
 
 ## Contributing
 
