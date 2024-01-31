@@ -1,8 +1,17 @@
-# FastAPI Template
+# FastAPI Template for LLMs
 
 ## Introduction
 
-- FastAPI Template for building API with FastAPI framework.
+- FastAPI Template for fast building LLMs API using FastAPI and Langchain
+- Support:
+    - [x] FastAPI application
+    - [x] Celery worker
+    - [x] PostgreSQL
+    - [x] pgAdmin
+    - [x] RabbitMQ
+    - [x] Redis
+
+**Note**: This template is not ready for production.
 
 ## Documentation
 
@@ -86,6 +95,11 @@ services:
 |----------------| --- | --- |
 | `/`            | GET | Hello world |
 | `/api/v1/docs` | | Swagger UI |
+
+## TODO
+- [ ] Traefik
+- [ ] Testing
+- [ ] OAuth2
 
 ## Contributing
 
