@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 
+
 # Request
 class BaseInput(BaseModel):
     session_id: str
@@ -19,6 +20,7 @@ class MessageSuccessResponse(BaseModel):
     success: bool
     created_at: str
     data: BaseResponse
+
 
 class SessionCreateSuccessResponse(BaseModel):
     session_id: str

@@ -5,7 +5,6 @@ from sqlalchemy import pool
 
 from alembic import context
 
-import os
 from app.core.config import settings
 
 from app.db.models.user_session import UserSession
