@@ -17,7 +17,7 @@ before_script:
   - echo $CI_REGISTRY
   - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
   - docker swarm init
-  - pip install poetry==1.4.2
+  - pip install flake8
 
 stages:
   - lint
