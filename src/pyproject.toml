@@ -23,7 +23,7 @@ alembic = "^1.13.0"
 ujson = "^5.9.0"
 eventlet = "^0.33.3"
 gevent = "^23.9.1"
-langchain = "^0.0.352"
+langchain = "0.1.10"
 langchain-google-genai = "^0.0.5"
 pillow = "^10.1.0"
 flower = "^2.0.1"
@@ -31,6 +31,8 @@ openai = "^1.9.0"
 langchain-openai = "^0.0.3"
 flake8 = "^7.0.0"
 pre-commit = "^3.6.0"
+ragatouille = "^0.0.7.post9"
+faiss-cpu = "^1.8.0"
 
 
 [build-system]

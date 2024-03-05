@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from typing import List, Optional
 
 
 # Request
@@ -8,11 +9,16 @@ class BaseInput(BaseModel):
     language: str = "jp"
 
 
+class BaseSessionCreateInput(BaseModel):
+    language: str = "jp"
+
+
 # Response
 class BaseResponse(BaseModel):
     status: int
     session_id: str
     content: str
+    content_source: Optional[List[str]]
 
 
 class MessageSuccessResponse(BaseModel):

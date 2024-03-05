@@ -50,9 +50,16 @@ To start development environment, run the following command:
 ```shell
 cd src
 poetry install
-```
-```shell
 # Please active Poetry virtual environment before running the following command
+poetry shell
+```
+
+```shell
+# Init database
+alembic upgrade head
+```
+
+```shell
 # Start celery worker
 celery -A celeryApp.worker worker -l info -Q main-queue -c 1
 ```
