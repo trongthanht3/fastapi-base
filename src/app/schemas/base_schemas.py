@@ -18,7 +18,7 @@ class BaseResponse(BaseModel):
     status: int
     session_id: str
     content: str
-    content_source: Optional[List[str]]
+    content_source: Optional[List[str]] = []
 
 
 class MessageSuccessResponse(BaseModel):

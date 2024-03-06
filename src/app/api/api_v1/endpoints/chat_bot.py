@@ -112,7 +112,10 @@ def _send_message_eth_expert(item: BaseInput) -> MessageSuccessResponse:
                              system_msg_content="",
                              create_at=datetime.today())
     system_response = chat_session.send_message(str(item.message))
-    logger.info(system_response)
+    content_resource = []
+    if len(system_response['context']) > 0:
+        for content in system_response:
+            content_resource.append(content.metadata['source'])
     new_message.system_msg_content = system_response
     commit_task = commit_to_db.delay(new_message)
     new_message = celery_app.AsyncResult(commit_task.id).get()
@@ -123,7 +126,8 @@ def _send_message_eth_expert(item: BaseInput) -> MessageSuccessResponse:
                                   created_at=str(datetime.today().strftime("%Y-%m-%d %H:%M:%S")),
                                   data=BaseResponse(status=200,
                                                     session_id=item.session_id,
-                                                    content=system_response))
+                                                    content=system_response,
+                                                    content_resource=content_resource))
 
 
 @router.get("/chat_history", status_code=200)

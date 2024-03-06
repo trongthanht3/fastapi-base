@@ -6,6 +6,7 @@ from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 from ragatouille import RAGPretrainedModel
+from langchain.chains import ConversationChain
 
 os.environ["OPENAI_API_KEY"] = settings.OPENAI_API_KEY
 
@@ -28,6 +29,7 @@ class ExpertEthereum(BaseLLMSession):
         )
 
         self.model = ChatOpenAI(model="gpt-3.5-turbo-0125")
+        self.chat = ConversationChain(llm=self.model)
 
         self.document_chain = create_stuff_documents_chain(self.model, self.prompt)
         self.retrieval_chain = create_retrieval_chain(self.retriever, self.document_chain)
