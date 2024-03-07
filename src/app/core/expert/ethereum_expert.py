@@ -10,10 +10,10 @@ from langchain.chains import ConversationChain
 
 os.environ["OPENAI_API_KEY"] = settings.OPENAI_API_KEY
 
-RAG = RAGPretrainedModel.from_pretrained("colbert-ir/colbertv2.0")
+# RAG = RAGPretrainedModel.from_pretrained("colbert-ir/colbertv2.0")
 
 
-# RAG = RAGPretrainedModel.from_index("app/vectordb/colbert/indexes/ethereum-org-no-split")
+RAG = RAGPretrainedModel.from_index("app/vectordb/colbert/indexes/ethereum-org-no-split")
 
 class ExpertEthereum(BaseLLMSession):
     def __init__(self, session_id: str):
@@ -35,5 +35,5 @@ class ExpertEthereum(BaseLLMSession):
         self.retrieval_chain = create_retrieval_chain(self.retriever, self.document_chain)
 
     async def send_message(self, message: str):
-        result = self.retrieval_chain.ainvoke({"input": message})
+        result = await self.retrieval_chain.ainvoke({"input": message})
         return result

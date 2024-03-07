@@ -2,6 +2,7 @@ import uuid
 
 from fastapi import APIRouter, HTTPException
 from app.core.llm.google_gemini import GeminiChatSession
+from app.core.llm.openai_module import OpenAIChatSession
 from app.core.expert.ethereum_expert import ExpertEthereum
 from app.schemas.base_schemas import BaseInput, BaseSessionCreateInput, MessageSuccessResponse, \
     SessionCreateSuccessResponse, BaseResponse
@@ -11,18 +12,19 @@ from datetime import datetime
 from app.core.config import settings
 from celeryApp.celery_app import celery_app
 from celeryApp.worker import commit_to_db
+from celeryApp.ethereum_worker import ethorg_retrieve
 from app.db.engine import sqlalchemy_engine
 from sqlalchemy.orm import sessionmaker
 import logging
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('uvicorn')
 router = APIRouter()
 
 session_maker = sessionmaker(bind=sqlalchemy_engine)
 db_session = session_maker()
 
 
-@router.post("/start_new_gemini_session",
+@router.post("/start_new_session",
              response_model=SessionCreateSuccessResponse,
              status_code=200)
 def _start_new_session(item: BaseSessionCreateInput) -> SessionCreateSuccessResponse:
@@ -45,6 +47,7 @@ def _start_new_session(item: BaseSessionCreateInput) -> SessionCreateSuccessResp
 
     return SessionCreateSuccessResponse(session_id=str(user_session_db_id),
                                         created_at=str(create_time.strftime("%Y-%m-%d %H:%M:%S")))
+
 
 
 @router.post("/send_message", status_code=200, response_model=MessageSuccessResponse)
@@ -87,7 +90,7 @@ def _send_message(item: BaseInput) -> MessageSuccessResponse:
 
 
 @router.post("/send_message_eth_expert", status_code=200, response_model=MessageSuccessResponse)
-def _send_message_eth_expert(item: BaseInput) -> MessageSuccessResponse:
+async def _send_message_eth_expert(item: BaseInput) -> MessageSuccessResponse:
     """
     Send message to chat
     :param item:
@@ -111,12 +114,13 @@ def _send_message_eth_expert(item: BaseInput) -> MessageSuccessResponse:
                              user_msg_content=item.message,
                              system_msg_content="",
                              create_at=datetime.today())
-    system_response = chat_session.send_message(str(item.message))
-    content_resource = []
+    system_response = await chat_session.send_message(str(item.message))
+    logger.info(f"System response: {system_response}")
+    content_source = []
     if len(system_response['context']) > 0:
-        for content in system_response:
-            content_resource.append(content.metadata['source'])
-    new_message.system_msg_content = system_response
+        for content in system_response['context']:
+            content_source.append(content.metadata['source'])
+    new_message.system_msg_content = system_response['answer']
     commit_task = commit_to_db.delay(new_message)
     new_message = celery_app.AsyncResult(commit_task.id).get()
     logger.info(f"New message created: {new_message}")
@@ -126,8 +130,8 @@ def _send_message_eth_expert(item: BaseInput) -> MessageSuccessResponse:
                                   created_at=str(datetime.today().strftime("%Y-%m-%d %H:%M:%S")),
                                   data=BaseResponse(status=200,
                                                     session_id=item.session_id,
-                                                    content=system_response,
-                                                    content_resource=content_resource))
+                                                    content=system_response['answer'],
+                                                    content_source=content_source))
 
 
 @router.get("/chat_history", status_code=200)
@@ -161,3 +165,16 @@ def _get_chat_history(session_id: str):
                                                                      content=pair_msg.system_msg_content)))
 
     return chat_history
+
+
+@router.post("/test_retrieve", status_code=200)
+def _test_retrieve(query: str):
+    """
+    Test retrieve
+    :param item:
+    :return:
+    """
+    system_response = ethorg_retrieve.delay(query)
+    result = celery_app.AsyncResult(system_response.id).get()    
+    
+    return str(result)
