@@ -16,6 +16,10 @@ from celeryApp.ethereum_worker import ethorg_retrieve
 from app.db.engine import sqlalchemy_engine
 from sqlalchemy.orm import sessionmaker
 from fastapi.responses import StreamingResponse
+from typing import List, Dict, Iterable, AsyncIterable
+from app.schemas.stream_schemas import CompletionChoice, CompletionUsage, CompletionResponse, CompletionStreamResponse
+import time
+
 import logging
 
 logger = logging.getLogger('uvicorn')
@@ -27,7 +31,7 @@ db_session = session_maker()
 
 @router.post("/start_new_session",
              response_model=SessionCreateSuccessResponse,
-             status_code=200)
+             status_code=status.HTTP_201_CREATED)
 def _start_new_session(item: BaseSessionCreateInput) -> SessionCreateSuccessResponse:
     # Write comment in markdown
     """
@@ -51,7 +55,7 @@ def _start_new_session(item: BaseSessionCreateInput) -> SessionCreateSuccessResp
 
 
 
-@router.post("/send_message", status_code=200, response_model=MessageSuccessResponse)
+@router.post("/send_message", status_code=status.HTTP_200_OK, response_model=MessageSuccessResponse)
 def _send_message(item: BaseInput) -> MessageSuccessResponse:
     """
     Send message to chat
@@ -117,6 +121,63 @@ async def _send_message_eth_expert(item: BaseInput):
                              create_at=datetime.today())
     if item.streaming:
         return StreamingResponse(content=chat_session.send_message_stream(str(item.message)), status_code=status.HTTP_200_OK, media_type='text/event-stream')
+    else:
+        system_response = await chat_session.send_message(str(item.message))
+        logger.info(f"System response: {system_response}")
+        content_source = []
+        if len(system_response['intermediate_steps']) > 0:
+            for item_content in system_response['intermediate_steps']:
+                for source_item in item_content[-1]:
+                    content_source.append(source_item['metadata']['source'])
+        new_message.system_msg_content = system_response['output']
+        commit_task = commit_to_db.delay(new_message)
+        new_message = celery_app.AsyncResult(commit_task.id).get()
+        logger.info(f"New message created: {new_message}")
+
+        return MessageSuccessResponse(version=settings.API_VERSION,
+                                    success=True,
+                                    created_at=str(datetime.today().strftime("%Y-%m-%d %H:%M:%S")),
+                                    data=BaseResponse(status=200,
+                                                        session_id=item.session_id,
+                                                        content=system_response['output'],
+                                                        content_source=content_source))
+
+
+@router.post("/beta_format", status_code=status.HTTP_200_OK, response_model=MessageSuccessResponse)
+async def _beta_format(item: BaseInput):
+    """
+    Send message to chat
+    :param item:
+    :return:
+    """
+    # Load data from db
+    user_session_db = db_session.query(UserSession).filter_by(user_session_id=item.session_id).first()
+    if user_session_db is None:
+        raise HTTPException(status_code=404, detail="Session ID not found")
+    old_messages = db_session.query(SessionMsg).filter_by(user_session_id=item.session_id).all()
+    # Sort old messages by create_at
+    old_messages.sort(key=lambda x: x.create_at)
+
+    # Load old messages to chat session by using user_msg_content and system_msg_content
+    chat_session = ExpertEthereum(item.session_id)
+    chat_session.start_new_session(language_code=user_session_db.language_code)
+    chat_session.load_message([(msg.user_msg_content, msg.system_msg_content) for msg in old_messages])
+
+    # Append new message to DB
+    new_message = SessionMsg(user_session_id=item.session_id,
+                             user_msg_content=item.message,
+                             system_msg_content="",
+                             create_at=datetime.today())
+    if item.streaming:
+        # base_chunk = CompletionStreamResponse(
+        #     id=str(uuid.uuid4()),
+        #     created=time.time(),
+        #     model='gpt-3.5-turbo-0125',
+        #     choices=[]
+        # )
+        # return StreamingResponse((response for response in chat_session.stream_completion(chat_session.stream_handle(item.message), base_chunk)),
+        #                             media_type="text/event-stream")
+        return await chat_session.send_message_stream_v2(str(item.message))
     else:
         system_response = await chat_session.send_message(str(item.message))
         logger.info(f"System response: {system_response}")

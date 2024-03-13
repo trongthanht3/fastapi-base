@@ -1,3 +1,6 @@
+import json
+from typing import List, Dict, Iterable, AsyncIterable
+from app.schemas.stream_schemas import CompletionChoice, CompletionUsage, CompletionResponse, CompletionStreamResponse
 from app.utils.constants import LANGUAGES, PROMPTS
 from langchain.memory import ConversationBufferMemory
 
@@ -34,6 +37,27 @@ class BaseLLMSession:
         self.chat.memory = self.memory
 
         return self
+
+    def stream_completion(self, output: Iterable, base_response: CompletionStreamResponse):
+        """
+        Streams a GPT4All output to the client.
+
+        Args:
+            output: The output of GPT4All.generate(), which is an iterable of tokens.
+            base_response: The base response object, which is cloned and modified for each token.
+
+        Returns:
+            A Generator of CompletionStreamResponse objects, which are serialized to JSON Event Stream format.
+        """
+        for token in output:
+            chunk = base_response.copy()
+            chunk.choices = [dict(CompletionChoice(
+                text=token,
+                index=0,
+                logprobs=-1,
+                finish_reason=''
+            ))]
+            yield f"data: {json.dumps(dict(chunk))}\n\n"
 
     def send_message(self, message: str):
         result = self.chat.run(message)
