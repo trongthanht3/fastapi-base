@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, status
 from app.core.llm.google_gemini import GeminiChatSession
 from app.core.llm.openai_module import OpenAIChatSession
 from app.core.expert.ethereum_expert import ExpertEthereum
@@ -15,6 +15,7 @@ from celeryApp.worker import commit_to_db
 from celeryApp.ethereum_worker import ethorg_retrieve
 from app.db.engine import sqlalchemy_engine
 from sqlalchemy.orm import sessionmaker
+from fastapi.responses import StreamingResponse
 import logging
 
 logger = logging.getLogger('uvicorn')
@@ -60,7 +61,7 @@ def _send_message(item: BaseInput) -> MessageSuccessResponse:
     # Load data from db
     user_session_db = db_session.query(UserSession).filter_by(user_session_id=item.session_id).first()
     if user_session_db is None:
-        raise HTTPException(status_code=404, detail="Session ID not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session ID not found")
     old_messages = db_session.query(SessionMsg).filter_by(user_session_id=item.session_id).all()
     # Sort old messages by create_at
     old_messages.sort(key=lambda x: x.create_at)
@@ -90,7 +91,7 @@ def _send_message(item: BaseInput) -> MessageSuccessResponse:
 
 
 @router.post("/send_message_eth_expert", status_code=200, response_model=MessageSuccessResponse)
-async def _send_message_eth_expert(item: BaseInput) -> MessageSuccessResponse:
+async def _send_message_eth_expert(item: BaseInput):
     """
     Send message to chat
     :param item:
@@ -114,24 +115,28 @@ async def _send_message_eth_expert(item: BaseInput) -> MessageSuccessResponse:
                              user_msg_content=item.message,
                              system_msg_content="",
                              create_at=datetime.today())
-    system_response = await chat_session.send_message(str(item.message))
-    logger.info(f"System response: {system_response}")
-    content_source = []
-    if len(system_response['context']) > 0:
-        for content in system_response['context']:
-            content_source.append(content.metadata['source'])
-    new_message.system_msg_content = system_response['answer']
-    commit_task = commit_to_db.delay(new_message)
-    new_message = celery_app.AsyncResult(commit_task.id).get()
-    logger.info(f"New message created: {new_message}")
+    if item.streaming:
+        return StreamingResponse(content=chat_session.send_message_stream(str(item.message)), status_code=status.HTTP_200_OK, media_type='text/event-stream')
+    else:
+        system_response = await chat_session.send_message(str(item.message))
+        logger.info(f"System response: {system_response}")
+        content_source = []
+        if len(system_response['intermediate_steps']) > 0:
+            for item_content in system_response['intermediate_steps']:
+                for source_item in item_content[-1]:
+                    content_source.append(source_item['metadata']['source'])
+        new_message.system_msg_content = system_response['output']
+        commit_task = commit_to_db.delay(new_message)
+        new_message = celery_app.AsyncResult(commit_task.id).get()
+        logger.info(f"New message created: {new_message}")
 
-    return MessageSuccessResponse(version=settings.API_VERSION,
-                                  success=True,
-                                  created_at=str(datetime.today().strftime("%Y-%m-%d %H:%M:%S")),
-                                  data=BaseResponse(status=200,
-                                                    session_id=item.session_id,
-                                                    content=system_response['answer'],
-                                                    content_source=content_source))
+        return MessageSuccessResponse(version=settings.API_VERSION,
+                                    success=True,
+                                    created_at=str(datetime.today().strftime("%Y-%m-%d %H:%M:%S")),
+                                    data=BaseResponse(status=200,
+                                                        session_id=item.session_id,
+                                                        content=system_response['output'],
+                                                        content_source=content_source))
 
 
 @router.get("/chat_history", status_code=200)

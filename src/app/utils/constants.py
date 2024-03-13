@@ -1,6 +1,6 @@
 import enum
 from langchain_core.prompts.prompt import PromptTemplate
-
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 # Language code
 class LANGUAGES(enum.Enum):
@@ -53,3 +53,25 @@ class PROMPTS:
         Human: {input}
         AI:"""
     JAPANESE_PROMPT = PromptTemplate(input_variables=["history", "input"], template=DEFAULT_JAPANESE_TEMPLATE)
+    
+    RAG_WITH_MESSAGE_TEMPLATE = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
+            """You are an assistant. And you help me to answer any question follow these rules:
+            - Sometime you will be provided some information about the answer, but if there is no extra information, just answer normally.
+            - If tools return some retrieved context, use them to answer the question, but if the context does not provide the information you need, just say that you don't know.
+            - Format the answer in Markdown language. Use number or bullet point to write the answer concise.
+            - If any document in retrieved context include a metadata with source, skip a new line then list every source from retrieved context by lines.
+            - If you use any sentence or reference from any sources to answer, provide the link to that source embeded in text in the answer using Markdown.
+            - If a chat history is given and the latest user question \
+              which might reference context in the chat history, formulate a standalone question \
+              which can be understood without the chat history. Do NOT answer the question, \
+              just reformulate it if needed and otherwise return it as is.""",
+        ),
+        MessagesPlaceholder(variable_name="chat_history"),
+        ("user", "{input}"),
+        MessagesPlaceholder(variable_name="agent_scratchpad"),
+    ]
+)
+

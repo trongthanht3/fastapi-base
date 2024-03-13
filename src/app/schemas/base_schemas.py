@@ -7,6 +7,7 @@ class BaseInput(BaseModel):
     session_id: str
     message: str
     language: str = "jp"
+    streaming: bool = False
 
 
 class BaseSessionCreateInput(BaseModel):
