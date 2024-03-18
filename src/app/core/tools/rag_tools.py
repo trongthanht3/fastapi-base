@@ -8,19 +8,20 @@ from langchain.callbacks.manager import (
 )
 
 
-RAG = RAGPretrainedModel.from_index("app/vectordb/colbert/indexes/ethereum-org-no-split")
+RAG = RAGPretrainedModel.from_index(
+    "app/vectordb/colbert/indexes/ethereum-org-no-split")
 retriever = RAG.as_langchain_retriever(k=10)
 
-class RetrievalInput(BaseModel):
-  query: str = Field(description="should be a search query")
-
 
 class RetrievalInput(BaseModel):
-  query: str = Field(description="should be a search query")
+    query: str = Field(description="should be a search query")
+
 
 class EthereumOrgRetrieverTool(BaseTool):
     name = "search_ethereum_network_information"
-    description = "Searches and returns only information relate to blockchain, especially Ethereum or EVM-based network. If the question is not about the blockchain, do not use this tool."
+    description = "Searches and returns only information relate to blockchain, \
+      especially information about Ethereum or EVM-based network (EIP/ERC standards, layer 1, layer 2, etc.). \
+      If the question is not about the blockchain, do not use this tool."
     args_schema: Type[BaseModel] = RetrievalInput
 
     def _run(
@@ -32,27 +33,27 @@ class EthereumOrgRetrieverTool(BaseTool):
         self, query: str, run_manager: Optional[AsyncCallbackManagerForToolRun] = None
     ) -> str:
         return await self.search_function_async(query)
-      
+
     def search_function(self, query: str):
-      docs = retriever.invoke(query)
-      docs_json = []
-      for doc in docs:
-        docs_json.append(
-            {
-                'page_content': doc.page_content,
-                'metadata': doc.metadata
-            }
-        )
-      return docs_json
+        docs = retriever.invoke(query)
+        docs_json = []
+        for doc in docs:
+            docs_json.append(
+                {
+                    'page_content': doc.page_content,
+                    'metadata': doc.metadata
+                }
+            )
+        return docs_json
 
     async def search_function_async(self, query: str):
-      docs = await retriever.ainvoke(query)
-      docs_json = []
-      for doc in docs:
-        docs_json.append(
-            {
-                'page_content': doc.page_content,
-                'metadata': doc.metadata
-            }
-        )
-      return docs_json
+        docs = await retriever.ainvoke(query)
+        docs_json = []
+        for doc in docs:
+            docs_json.append(
+                {
+                    'page_content': doc.page_content,
+                    'metadata': doc.metadata
+                }
+            )
+        return docs_json

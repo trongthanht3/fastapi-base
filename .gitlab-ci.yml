@@ -6,10 +6,10 @@ variables:
   DOCKER_OPTS: "--insecure-registry $CI_REGISTRY"
 
 services:
-   - name: docker:dind
-     alias: docker
-     # Change insecure-registry to your registry
-     command: ['--insecure-registry=10.0.1.185:5000']
+  - name: docker:dind
+    alias: docker
+    # Change insecure-registry to your registry
+    command: ["--insecure-registry=10.0.0.209:5000"]
 
 before_script:
   - docker info
