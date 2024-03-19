@@ -3,6 +3,8 @@ from langchain_core.prompts.prompt import PromptTemplate
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 # Language code
+
+
 class LANGUAGES(enum.Enum):
     ENGLISH = "en"
     JAPANESE = "jp"
@@ -30,7 +32,8 @@ class PROMPTS:
         {history}
         Human: {input}
         AI:"""
-    ENGLISH_PROMPT = PromptTemplate(input_variables=["history", "input"], template=DEFAULT_ENGLISH_TEMPLATE)
+    ENGLISH_PROMPT = PromptTemplate(
+        input_variables=["history", "input"], template=DEFAULT_ENGLISH_TEMPLATE)
 
     # Japanese
     INSTRUCT_JAPANESE = """あなたを私のアシスタントにしてほしいのです。 あなたは私のルールに従います:
@@ -52,13 +55,14 @@ class PROMPTS:
         {history}
         Human: {input}
         AI:"""
-    JAPANESE_PROMPT = PromptTemplate(input_variables=["history", "input"], template=DEFAULT_JAPANESE_TEMPLATE)
-    
+    JAPANESE_PROMPT = PromptTemplate(
+        input_variables=["history", "input"], template=DEFAULT_JAPANESE_TEMPLATE)
+
     RAG_WITH_MESSAGE_TEMPLATE = ChatPromptTemplate.from_messages(
-    [
-        (
-            "system",
-            """You are an assistant. And you help me to answer any question follow these rules:
+        [
+            (
+                "system",
+                """You are an assistant. And you help me to answer any question follow these rules:
             - If the question is rude, you can pay back by being rude.
             - If the question is about blockchain (Bitcoin, Ethereum, etc.), you must use the tools to retrieve the information.
             - Sometime you will be provided some information about the answer, but if there is no extra information, just answer normally.
@@ -70,10 +74,9 @@ class PROMPTS:
               which might reference context in the chat history, formulate a standalone question \
               which can be understood without the chat history. Do NOT answer the question, \
               just reformulate it if needed and otherwise return it as is.""",
-        ),
-        MessagesPlaceholder(variable_name="chat_history"),
-        ("user", "{input}"),
-        MessagesPlaceholder(variable_name="agent_scratchpad"),
-    ]
-)
-
+            ),
+            MessagesPlaceholder(variable_name="chat_history"),
+            ("user", "{input}"),
+            MessagesPlaceholder(variable_name="agent_scratchpad"),
+        ]
+    )

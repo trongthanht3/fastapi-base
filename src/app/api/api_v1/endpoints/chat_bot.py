@@ -2,7 +2,6 @@ import uuid
 
 from fastapi import APIRouter, HTTPException, status
 from app.core.llm.google_gemini import GeminiChatSession
-from app.core.llm.openai_module import OpenAIChatSession
 from app.core.expert.ethereum_expert import ExpertEthereum
 from app.schemas.base_schemas import BaseInput, BaseSessionCreateInput, MessageSuccessResponse, \
     SessionCreateSuccessResponse, BaseResponse
@@ -16,9 +15,6 @@ from celeryApp.ethereum_worker import ethorg_retrieve
 from app.db.engine import sqlalchemy_engine
 from sqlalchemy.orm import sessionmaker
 from fastapi.responses import StreamingResponse
-from typing import List, Dict, Iterable, AsyncIterable
-from app.schemas.stream_schemas import CompletionChoice, CompletionUsage, CompletionResponse, CompletionStreamResponse
-import time
 
 import logging
 
@@ -48,11 +44,11 @@ def _start_new_session(item: BaseSessionCreateInput) -> SessionCreateSuccessResp
     commit_task = commit_to_db.delay(user_session_db)
     user_session_db = celery_app.AsyncResult(commit_task.id).get()
     user_session_db_id = user_session_db.user_session_id
-    logger.info(f"User session ID created: {user_session_db_id} with temp ID: {temporary_user_session_id}")
+    logger.info(
+        f"User session ID created: {user_session_db_id} with temp ID: {temporary_user_session_id}")
 
     return SessionCreateSuccessResponse(session_id=str(user_session_db_id),
                                         created_at=str(create_time.strftime("%Y-%m-%d %H:%M:%S")))
-
 
 
 @router.post("/send_message", status_code=status.HTTP_200_OK, response_model=MessageSuccessResponse)
@@ -63,17 +59,21 @@ def _send_message(item: BaseInput) -> MessageSuccessResponse:
     :return:
     """
     # Load data from db
-    user_session_db = db_session.query(UserSession).filter_by(user_session_id=item.session_id).first()
+    user_session_db = db_session.query(UserSession).filter_by(
+        user_session_id=item.session_id).first()
     if user_session_db is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session ID not found")
-    old_messages = db_session.query(SessionMsg).filter_by(user_session_id=item.session_id).all()
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Session ID not found")
+    old_messages = db_session.query(SessionMsg).filter_by(
+        user_session_id=item.session_id).all()
     # Sort old messages by create_at
     old_messages.sort(key=lambda x: x.create_at)
 
     # Load old messages to chat session by using user_msg_content and system_msg_content
     chat_session = GeminiChatSession(item.session_id)
     chat_session.start_new_session(language_code=user_session_db.language_code)
-    chat_session.load_message([(msg.user_msg_content, msg.system_msg_content) for msg in old_messages])
+    chat_session.load_message(
+        [(msg.user_msg_content, msg.system_msg_content) for msg in old_messages])
 
     # Append new message to DB
     new_message = SessionMsg(user_session_id=item.session_id,
@@ -88,7 +88,8 @@ def _send_message(item: BaseInput) -> MessageSuccessResponse:
 
     return MessageSuccessResponse(version=settings.API_VERSION,
                                   success=True,
-                                  created_at=str(datetime.today().strftime("%Y-%m-%d %H:%M:%S")),
+                                  created_at=str(datetime.today().strftime(
+                                      "%Y-%m-%d %H:%M:%S")),
                                   data=BaseResponse(status=200,
                                                     session_id=item.session_id,
                                                     content=system_response))
@@ -102,17 +103,20 @@ async def _send_message_eth_expert(item: BaseInput):
     :return:
     """
     # Load data from db
-    user_session_db = db_session.query(UserSession).filter_by(user_session_id=item.session_id).first()
+    user_session_db = db_session.query(UserSession).filter_by(
+        user_session_id=item.session_id).first()
     if user_session_db is None:
         raise HTTPException(status_code=404, detail="Session ID not found")
-    old_messages = db_session.query(SessionMsg).filter_by(user_session_id=item.session_id).all()
+    old_messages = db_session.query(SessionMsg).filter_by(
+        user_session_id=item.session_id).all()
     # Sort old messages by create_at
     old_messages.sort(key=lambda x: x.create_at)
 
     # Load old messages to chat session by using user_msg_content and system_msg_content
     chat_session = ExpertEthereum(item.session_id)
     chat_session.start_new_session(language_code=user_session_db.language_code)
-    chat_session.load_message([(msg.user_msg_content, msg.system_msg_content) for msg in old_messages])
+    chat_session.load_message(
+        [(msg.user_msg_content, msg.system_msg_content) for msg in old_messages])
 
     # Append new message to DB
     new_message = SessionMsg(user_session_id=item.session_id,
@@ -135,9 +139,10 @@ async def _send_message_eth_expert(item: BaseInput):
         logger.info(f"New message created: {new_message}")
 
         return MessageSuccessResponse(version=settings.API_VERSION,
-                                    success=True,
-                                    created_at=str(datetime.today().strftime("%Y-%m-%d %H:%M:%S")),
-                                    data=BaseResponse(status=200,
+                                      success=True,
+                                      created_at=str(datetime.today().strftime(
+                                          "%Y-%m-%d %H:%M:%S")),
+                                      data=BaseResponse(status=200,
                                                         session_id=item.session_id,
                                                         content=system_response['output'],
                                                         content_source=content_source))
@@ -151,17 +156,20 @@ async def _beta_format(item: BaseInput):
     :return:
     """
     # Load data from db
-    user_session_db = db_session.query(UserSession).filter_by(user_session_id=item.session_id).first()
+    user_session_db = db_session.query(UserSession).filter_by(
+        user_session_id=item.session_id).first()
     if user_session_db is None:
         raise HTTPException(status_code=404, detail="Session ID not found")
-    old_messages = db_session.query(SessionMsg).filter_by(user_session_id=item.session_id).all()
+    old_messages = db_session.query(SessionMsg).filter_by(
+        user_session_id=item.session_id).all()
     # Sort old messages by create_at
     old_messages.sort(key=lambda x: x.create_at)
 
     # Load old messages to chat session by using user_msg_content and system_msg_content
     chat_session = ExpertEthereum(item.session_id)
     chat_session.start_new_session(language_code=user_session_db.language_code)
-    chat_session.load_message([(msg.user_msg_content, msg.system_msg_content) for msg in old_messages])
+    chat_session.load_message(
+        [(msg.user_msg_content, msg.system_msg_content) for msg in old_messages])
 
     # Append new message to DB
     new_message = SessionMsg(user_session_id=item.session_id,
@@ -192,9 +200,10 @@ async def _beta_format(item: BaseInput):
         logger.info(f"New message created: {new_message}")
 
         return MessageSuccessResponse(version=settings.API_VERSION,
-                                    success=True,
-                                    created_at=str(datetime.today().strftime("%Y-%m-%d %H:%M:%S")),
-                                    data=BaseResponse(status=200,
+                                      success=True,
+                                      created_at=str(datetime.today().strftime(
+                                          "%Y-%m-%d %H:%M:%S")),
+                                      data=BaseResponse(status=200,
                                                         session_id=item.session_id,
                                                         content=system_response['output'],
                                                         content_source=content_source))
@@ -208,10 +217,12 @@ def _get_chat_history(session_id: str):
     :return:
     """
     # Load data from db
-    user_session_db = db_session.query(UserSession).filter_by(user_session_id=session_id).first()
+    user_session_db = db_session.query(UserSession).filter_by(
+        user_session_id=session_id).first()
     if user_session_db is None:
         raise HTTPException(status_code=404, detail="Session ID not found")
-    old_messages = db_session.query(SessionMsg).filter_by(user_session_id=session_id).all()
+    old_messages = db_session.query(SessionMsg).filter_by(
+        user_session_id=session_id).all()
     # Sort old messages by create_at
     old_messages.sort(key=lambda x: x.create_at)
 
@@ -219,13 +230,15 @@ def _get_chat_history(session_id: str):
     for pair_msg in old_messages:
         chat_history.append(MessageSuccessResponse(version=settings.API_VERSION,
                                                    success=True,
-                                                   created_at=str(datetime.today().strftime("%Y-%m-%d %H:%M:%S")),
+                                                   created_at=str(datetime.today().strftime(
+                                                       "%Y-%m-%d %H:%M:%S")),
                                                    data=BaseResponse(status=200,
                                                                      session_id=session_id,
                                                                      content=pair_msg.user_msg_content)))
         chat_history.append(MessageSuccessResponse(version=settings.API_VERSION,
                                                    success=True,
-                                                   created_at=str(datetime.today().strftime("%Y-%m-%d %H:%M:%S")),
+                                                   created_at=str(datetime.today().strftime(
+                                                       "%Y-%m-%d %H:%M:%S")),
                                                    data=BaseResponse(status=200,
                                                                      session_id=session_id,
                                                                      content=pair_msg.system_msg_content)))
@@ -241,6 +254,6 @@ def _test_retrieve(query: str):
     :return:
     """
     system_response = ethorg_retrieve.delay(query)
-    result = celery_app.AsyncResult(system_response.id).get()    
-    
+    result = celery_app.AsyncResult(system_response.id).get()
+
     return str(result)
