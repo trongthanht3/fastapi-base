@@ -5,14 +5,17 @@ from ragatouille import RAGPretrainedModel
 import logging
 logger = logging.getLogger("celeryApp")
 
+
 class EthereumRetrievalModel:
     def __init__(self, k=10):
-        self.model = RAGPretrainedModel.from_index("app/vectordb/colbert/indexes/ethereum-org-no-split")
+        self.model = RAGPretrainedModel.from_index(
+            "app/vectordb/colbert/indexes/ethereum-org-no-split")
         self.retriever = self.model.as_langchain_retriever(k=k)
 
     @staticmethod
     def _load_model_from_path(path):
-        model = RAGPretrainedModel.from_index("app/vectordb/colbert/indexes/ethereum-org-no-split")
+        model = RAGPretrainedModel.from_index(
+            "app/vectordb/colbert/indexes/ethereum-org-no-split")
         return model
 
     def predict(self, query):
@@ -22,6 +25,7 @@ class EthereumRetrievalModel:
         """
         predictions = self.retriever.invoke(query)
         return predictions
+
 
 class PredictTask(Task):
     """
@@ -47,10 +51,10 @@ class PredictTask(Task):
 
 
 @celery_app.task(ignore_result=False,
-          bind=True,
-          base=PredictTask,
-          path=('celeryApp.ethereum_worker', 'EthereumRetrievalModel'),
-          acks_late=True)
+                 bind=True,
+                 base=PredictTask,
+                 path=('celeryApp.ethereum_worker', 'EthereumRetrievalModel'),
+                 acks_late=True)
 def ethorg_retrieve(self, query):
     """
     Essentially the run method of PredictTask
