@@ -4,7 +4,7 @@ from starlette.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
 from app.api.api_v1.api import api_router
-from mesLogging import configure_logging
+from app.mesLogging import configure_logging
 
 
 def get_app() -> FastAPI:
@@ -28,7 +28,8 @@ def get_app() -> FastAPI:
     if settings.BACKEND_CORS_ORIGINS:
         app.add_middleware(
             CORSMiddleware,
-            allow_origins=[str(origin) for origin in settings.BACKEND_CORS_ORIGINS],
+            # allow_origins=[str(origin) for origin in settings.BACKEND_CORS_ORIGINS],
+            allow_origins=['*'],
             allow_credentials=True,
             allow_methods=["*"],
             allow_headers=["*"],

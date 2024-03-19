@@ -1,2 +1,7 @@
 .idea/
 .env
+**/__pycache__/
+**/**/__pycache__/
+**/*.pyc
+**/**/*.pyc
+src/app/vectordb/

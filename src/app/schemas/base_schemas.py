@@ -1,10 +1,16 @@
 from pydantic import BaseModel
+from typing import List, Optional
 
 
 # Request
 class BaseInput(BaseModel):
     session_id: str
     message: str
+    language: str = "jp"
+    streaming: bool = False
+
+
+class BaseSessionCreateInput(BaseModel):
     language: str = "jp"
 
 
@@ -13,6 +19,7 @@ class BaseResponse(BaseModel):
     status: int
     session_id: str
     content: str
+    content_source: Optional[List[str]] = []
 
 
 class MessageSuccessResponse(BaseModel):
