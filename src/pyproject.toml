@@ -32,6 +32,7 @@ flake8 = "^7.0.0"
 pre-commit = "^3.6.0"
 ragatouille = "^0.0.7.post9"
 faiss-cpu = "^1.8.0"
+gdown = "^5.1.0"
 
 
 [build-system]

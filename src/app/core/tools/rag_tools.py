@@ -6,7 +6,21 @@ from langchain.callbacks.manager import (
     AsyncCallbackManagerForToolRun,
     CallbackManagerForToolRun,
 )
+import os
+import logging
+logger = logging.getLogger('uvicorn')
 
+# Check if pretrained is already downloaded
+if not os.path.exists("app/vectordb/colbert/indexes/"):
+    os.makedirs("app/vectordb/colbert/indexes")
+if not os.path.exists("app/vectordb/colbert/indexes/ethereum-org-no-split"):
+    import zipfile
+    import gdown
+    logger.info("Downloading the pretrained model")
+    gdown.download(id="1-5VrYz1w0rVAfz_0UulhkNu1isNL7OP9",
+                   output="app/vectordb/colbert/indexes/ethereum-org.zip", quiet=False)
+    with zipfile.ZipFile("app/vectordb/colbert/indexes/ethereum-org.zip", 'r') as zip_ref:
+        zip_ref.extractall("app/vectordb/colbert/indexes/")
 
 RAG = RAGPretrainedModel.from_index(
     "app/vectordb/colbert/indexes/ethereum-org-no-split")
