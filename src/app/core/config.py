@@ -116,6 +116,9 @@ class Settings(BaseSettings):
             port=values.get("REDIS_PORT"),
         )
 
+    # User Management
+    SUPER_ADMIN_ADDRESS: str
+
     class Config:
         extra = Extra.allow
         case_sensitive = True

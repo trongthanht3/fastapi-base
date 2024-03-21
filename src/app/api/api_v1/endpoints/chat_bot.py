@@ -1,12 +1,12 @@
-import uuid
+from app.core.security.ecdsa_auth import ECDSAHeader
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 from app.core.llm.google_gemini import GeminiChatSession
 from app.core.expert.ethereum_expert import ExpertEthereum
 from app.schemas.base_schemas import BaseInput, BaseSessionCreateInput, MessageSuccessResponse, \
     SessionCreateSuccessResponse, BaseResponse
 from app.db.models.session_msg import SessionMsg
-from app.db.models.user_session import UserSession
+from app.db.models.user_chat_session import UserChatSession
 from datetime import datetime
 from app.core.config import settings
 from celeryApp.celery_app import celery_app
@@ -15,6 +15,7 @@ from celeryApp.ethereum_worker import ethorg_retrieve
 from app.db.engine import sqlalchemy_engine
 from sqlalchemy.orm import sessionmaker
 from fastapi.responses import StreamingResponse
+from app.schemas.auth_schemas import UserSession
 
 import logging
 
@@ -24,46 +25,52 @@ router = APIRouter()
 session_maker = sessionmaker(bind=sqlalchemy_engine)
 db_session = session_maker()
 
+ecdsa_header_auth = ECDSAHeader(name="token")
+
 
 @router.post("/start_new_session",
              response_model=SessionCreateSuccessResponse,
              status_code=status.HTTP_201_CREATED)
-def _start_new_session(item: BaseSessionCreateInput) -> SessionCreateSuccessResponse:
+def _start_new_session(item: BaseSessionCreateInput,
+                       user_session: UserSession = Depends(ecdsa_header_auth)) -> SessionCreateSuccessResponse:
     # Write comment in markdown
     """
     Start a new chat session
     :param item:
     :return:
     """
-    temporary_user_session_id = str(uuid.uuid4())
     create_time = datetime.today()
     # Sync DB
-    user_session_db = UserSession(user_id=temporary_user_session_id,
-                                  create_at=create_time,
-                                  language_code=item.language)
-    commit_task = commit_to_db.delay(user_session_db)
-    user_session_db = celery_app.AsyncResult(commit_task.id).get()
-    user_session_db_id = user_session_db.user_session_id
+    user_chat_session_db = UserChatSession(user_id=user_session.user_id,
+                                           create_at=create_time,
+                                           language_code=item.language)
+    commit_task = commit_to_db.delay(user_chat_session_db)
+    user_chat_session_db = celery_app.AsyncResult(commit_task.id).get()
+    user_session_db_id = user_chat_session_db.user_session_id
     logger.info(
-        f"User session ID created: {user_session_db_id} with temp ID: {temporary_user_session_id}")
+        f"User session ID created: {user_session_db_id} with temp ID: {user_session.user_id}")
 
     return SessionCreateSuccessResponse(session_id=str(user_session_db_id),
                                         created_at=str(create_time.strftime("%Y-%m-%d %H:%M:%S")))
 
 
 @router.post("/send_message", status_code=status.HTTP_200_OK, response_model=MessageSuccessResponse)
-def _send_message(item: BaseInput) -> MessageSuccessResponse:
+def _send_message(item: BaseInput,
+                  user_session: UserSession = Depends(ecdsa_header_auth)) -> MessageSuccessResponse:
     """
     Send message to chat
     :param item:
     :return:
     """
     # Load data from db
-    user_session_db = db_session.query(UserSession).filter_by(
+    user_chat_session_db = db_session.query(UserChatSession).filter_by(
         user_session_id=item.session_id).first()
-    if user_session_db is None:
+    if user_chat_session_db is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Session ID not found")
+    if user_chat_session_db.user_id != user_session.user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Session ID not match")
     old_messages = db_session.query(SessionMsg).filter_by(
         user_session_id=item.session_id).all()
     # Sort old messages by create_at
@@ -71,7 +78,8 @@ def _send_message(item: BaseInput) -> MessageSuccessResponse:
 
     # Load old messages to chat session by using user_msg_content and system_msg_content
     chat_session = GeminiChatSession(item.session_id)
-    chat_session.start_new_session(language_code=user_session_db.language_code)
+    chat_session.start_new_session(
+        language_code=user_chat_session_db.language_code)
     chat_session.load_message(
         [(msg.user_msg_content, msg.system_msg_content) for msg in old_messages])
 
@@ -95,18 +103,23 @@ def _send_message(item: BaseInput) -> MessageSuccessResponse:
                                                     content=system_response))
 
 
-@router.post("/send_message_eth_expert", status_code=200, response_model=MessageSuccessResponse)
-async def _send_message_eth_expert(item: BaseInput):
+@router.post("/send_message_eth_expert", status_code=status.HTTP_200_OK, response_model=MessageSuccessResponse)
+async def _send_message_eth_expert(item: BaseInput,
+                                   user_session: UserSession = Depends(ecdsa_header_auth)):
     """
     Send message to chat
     :param item:
     :return:
     """
     # Load data from db
-    user_session_db = db_session.query(UserSession).filter_by(
+    user_chat_session_db = db_session.query(UserChatSession).filter_by(
         user_session_id=item.session_id).first()
-    if user_session_db is None:
-        raise HTTPException(status_code=404, detail="Session ID not found")
+    if user_chat_session_db is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Session ID not found")
+    if user_chat_session_db.user_id != user_session.user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Session ID not match")
     old_messages = db_session.query(SessionMsg).filter_by(
         user_session_id=item.session_id).all()
     # Sort old messages by create_at
@@ -114,7 +127,8 @@ async def _send_message_eth_expert(item: BaseInput):
 
     # Load old messages to chat session by using user_msg_content and system_msg_content
     chat_session = ExpertEthereum(item.session_id)
-    chat_session.start_new_session(language_code=user_session_db.language_code)
+    chat_session.start_new_session(
+        language_code=user_chat_session_db.language_code)
     chat_session.load_message(
         [(msg.user_msg_content, msg.system_msg_content) for msg in old_messages])
 
@@ -149,16 +163,17 @@ async def _send_message_eth_expert(item: BaseInput):
 
 
 @router.post("/beta_format", status_code=status.HTTP_200_OK, response_model=MessageSuccessResponse)
-async def _beta_format(item: BaseInput):
+async def _beta_format(item: BaseInput,
+                       user_session: UserSession = Depends(ecdsa_header_auth)):
     """
     Send message to chat
     :param item:
     :return:
     """
     # Load data from db
-    user_session_db = db_session.query(UserSession).filter_by(
+    user_chat_session_db = db_session.query(UserChatSession).filter_by(
         user_session_id=item.session_id).first()
-    if user_session_db is None:
+    if user_chat_session_db is None:
         raise HTTPException(status_code=404, detail="Session ID not found")
     old_messages = db_session.query(SessionMsg).filter_by(
         user_session_id=item.session_id).all()
@@ -167,7 +182,8 @@ async def _beta_format(item: BaseInput):
 
     # Load old messages to chat session by using user_msg_content and system_msg_content
     chat_session = ExpertEthereum(item.session_id)
-    chat_session.start_new_session(language_code=user_session_db.language_code)
+    chat_session.start_new_session(
+        language_code=user_chat_session_db.language_code)
     chat_session.load_message(
         [(msg.user_msg_content, msg.system_msg_content) for msg in old_messages])
 
@@ -217,9 +233,10 @@ def _get_chat_history(session_id: str):
     :return:
     """
     # Load data from db
-    user_session_db = db_session.query(UserSession).filter_by(
+    user_chat_session_db = db_session.query(UserChatSession).filter_by(
         user_session_id=session_id).first()
-    if user_session_db is None:
+
+    if user_chat_session_db is None:
         raise HTTPException(status_code=404, detail="Session ID not found")
     old_messages = db_session.query(SessionMsg).filter_by(
         user_session_id=session_id).all()

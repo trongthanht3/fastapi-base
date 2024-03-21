@@ -3,15 +3,26 @@ from celeryApp.worker import get_time
 from celeryApp.celery_app import celery_app
 
 import logging
-
 logger = logging.getLogger(__name__)
+
+
 router = APIRouter()
+
+# oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
 @router.get("/hello")
 def hello():
     return {"hello": "world"}
 
+
+def validate_token(token: str):
+    return token == "valid_token"
+
+
+# @app.get("/items/")
+# async def read_items(key: str = Depends(header_scheme)):
+#     return {"key": key}
 
 @router.get("/hello/{name}")
 def hello_name(name: str):

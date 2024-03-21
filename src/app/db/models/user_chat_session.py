@@ -8,13 +8,14 @@ class Base(DeclarativeBase):
     pass
 
 
-class UserSession(Base):
-    __tablename__ = "user_session"
+class UserChatSession(Base):
+    __tablename__ = "user_chat_session"
 
-    user_session_id: Mapped[int] = mapped_column(Integer(), primary_key=True, autoincrement=True, nullable=False)
+    user_session_id: Mapped[int] = mapped_column(
+        Integer(), primary_key=True, autoincrement=True, nullable=False)
     user_id: Mapped[str] = mapped_column(String(), nullable=False)
     create_at: Mapped[str] = mapped_column(DateTime(), nullable=True)
     language_code: Mapped[str] = mapped_column(String(), nullable=False)
 
     def __repr__(self) -> str:
-        return f"UserSession(user_session_id={self.user_session_id!r}, user_id={self.user_id!r}, create_at={self.create_at!r})"
+        return f"UserChatSession(user_session_id={self.user_session_id!r}, user_id={self.user_id!r}, create_at={self.create_at!r})"
