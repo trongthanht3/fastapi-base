@@ -1,8 +1,8 @@
 import enum
 import secrets
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Optional
 from pydantic_settings import BaseSettings
-from pydantic import AnyHttpUrl, HttpUrl, PostgresDsn, validator, AmqpDsn, RedisDsn, Extra
+from pydantic import HttpUrl, PostgresDsn, validator, AmqpDsn, RedisDsn, Extra
 
 
 class LogLevel(str, enum.Enum):  # noqa: WPS600
@@ -40,15 +40,16 @@ class Settings(BaseSettings):
     # BACKEND_CORS_ORIGINS is a JSON-formatted list of origins
     # e.g: '["http://localhost", "http://localhost:4200", "http://localhost:3000", \
     # "http://localhost:8080", "http://local.dockertoolbox.tiangolo.com"]'
-    BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = []
+    BACKEND_CORS_ORIGINS = []
+    # BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = []
 
-    @validator("BACKEND_CORS_ORIGINS", pre=True)
-    def assemble_cors_origins(cls, v: Union[str, List[str]]) -> Union[List[str], str]:
-        if isinstance(v, str) and not v.startswith("["):
-            return [i.strip() for i in v.split(",")]
-        elif isinstance(v, (list, str)):
-            return v
-        raise ValueError(v)
+    # @validator("BACKEND_CORS_ORIGINS", pre=True)
+    # def assemble_cors_origins(cls, v: Union[str, List[str]]) -> Union[List[str], str]:
+    #     if isinstance(v, str) and not v.startswith("["):
+    #         return [i.strip() for i in v.split(",")]
+    #     elif isinstance(v, (list, str)):
+    #         return v
+    #     raise ValueError(v)
 
     PROJECT_NAME: str
     SENTRY_DSN: Optional[HttpUrl] = None
@@ -79,9 +80,6 @@ class Settings(BaseSettings):
             path=f"{values.get('POSTGRES_DB') or ''}",
         )
 
-    class Config:
-        case_sensitive = True
-
     RABBITMQ_USERNAME: str
     RABBITMQ_PASSWORD: str
     RABBITMQ_HOST: str
@@ -102,6 +100,7 @@ class Settings(BaseSettings):
 
     # LLM env
     GOOGLE_API_KEY: str
+    OPENAI_API_KEY: str
 
     # Redis env
     REDIS_HOST: str
@@ -120,6 +119,7 @@ class Settings(BaseSettings):
 
     class Config:
         extra = Extra.allow
+        case_sensitive = True
 
 
 settings = Settings(_env_file=".env", _env_file_encoding="utf-8")

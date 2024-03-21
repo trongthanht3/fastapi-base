@@ -30,4 +30,3 @@ RUN chmod +x /backend-start.sh
 RUN chmod +x /prestart.sh
 CMD ["bash", "/prestart.sh"]
 CMD ["bash", "/backend-start.sh"]
-

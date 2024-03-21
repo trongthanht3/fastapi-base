@@ -62,4 +62,3 @@ def configure_logging():  # pragma: no cover
         level=settings.LOG_LEVEL.value,
     )
     return None
-

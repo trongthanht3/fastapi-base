@@ -1,6 +1,3 @@
-import os
-import shutil
-
 import uvicorn
 
 from app.core.config import settings

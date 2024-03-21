@@ -5,7 +5,6 @@ from sqlalchemy import pool
 
 from alembic import context
 
-import os
 from app.core.config import settings
 
 from app.db.models.user_session import UserSession
@@ -37,7 +36,6 @@ def get_url():
     password = settings.POSTGRES_PASSWORD
     server = settings.POSTGRES_SERVER
     db = settings.POSTGRES_DB
-    print(f"URL: postgresql+psycopg2://{user}:{password}@{server}/{db}")
     return f"postgresql+psycopg2://{user}:{password}@{server}/{db}"
 
 
