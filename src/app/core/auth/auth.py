@@ -28,8 +28,8 @@ async def login(login_input: LoginInput):
         db_session.flush()
         return LoginSuccess(
             token=base64.b64encode(f"{login_input.signature}:{login_input.expire_at}".encode('ascii')))
-    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
-                        detail="vai loz luon")
+    raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        detail="Error from server!!!")
 
 
 async def logout(address: str):
@@ -41,5 +41,5 @@ async def logout(address: str):
     except Exception as e:
         logger.error(f"Error: {e}")
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Error from server!!!")
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error from server!!!")
     return {"message": "Logout successfully"}

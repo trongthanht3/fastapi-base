@@ -18,7 +18,7 @@ async def _authenticate(login_input: LoginInput):
     return await login(login_input)
 
 
-@router.post("/logout", status_code=200)
+@router.post("/logout", status_code=status.HTTP_200_OK)
 async def _logout(user_session: UserSession = Depends(ecdsa_header_auth)):
     return await logout(user_session.address)
 

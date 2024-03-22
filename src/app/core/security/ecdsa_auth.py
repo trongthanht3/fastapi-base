@@ -110,6 +110,8 @@ def validate_signature(signature, expire_at):
         new_session_time = datetime.datetime.strptime(
             expire_at, format_string)
         current_time = datetime.datetime.now()
+        logger.info(
+            f"server time: {address_session.token_expire_at}, token time: {new_session_time}, current time: {current_time}")
     except Exception as e:
         logger.error(f"Error: {e}")
         raise HTTPException(
@@ -118,6 +120,6 @@ def validate_signature(signature, expire_at):
 
     if current_time > new_session_time:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Invalid expire date"
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Invalid expire date"
         )
     return address_rec, True

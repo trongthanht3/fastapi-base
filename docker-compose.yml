@@ -64,62 +64,62 @@ services:
       timeout: 3s
       retries: 50
 
-  # celeryworker:
-  #   image: ${DOCKER_IMAGE_CELERYWORKER}:latest
-  #   depends_on:
-  #     - db
-  #     - rabbitmq
-  #     - redis
-  #   env_file:
-  #     - .env
-  #   environment:
-  #     - SERVER_NAME=${DOMAIN?Variable not set}
-  #     - SERVER_HOST=https://${DOMAIN?Variable not set}
-  #   build:
-  #     context: ./
-  #     dockerfile: ./docker/celeryworker.dockerfile
-  #     args:
-  #       INSTALL_DEV: ${INSTALL_DEV-false}
+  celeryworker:
+    image: ${DOCKER_IMAGE_CELERYWORKER}:latest
+    depends_on:
+      - db
+      - rabbitmq
+      - redis
+    env_file:
+      - .env
+    environment:
+      - SERVER_NAME=${DOMAIN?Variable not set}
+      - SERVER_HOST=https://${DOMAIN?Variable not set}
+    build:
+      context: ./
+      dockerfile: ./docker/celeryworker.dockerfile
+      args:
+        INSTALL_DEV: ${INSTALL_DEV-false}
 
-  # celeryflower:
-  #   image: ${DOCKER_IMAGE_FLOWER}:latest
-  #   depends_on:
-  #     - db
-  #     - rabbitmq
-  #     - redis
-  #   ports:
-  #     - 5555:5555
-  #   env_file:
-  #     - .env
-  #   environment:
-  #     - SERVER_NAME=${DOMAIN?Variable not set}
-  #     - SERVER_HOST=https://${DOMAIN?Variable not set}
-  #   build:
-  #     context: ./
-  #     dockerfile: ./docker/celeryworker.dockerfile
-  #     args:
-  #       INSTALL_DEV: ${INSTALL_DEV-false}
-  #   command: ["celery", "-A", "celeryApp.worker", "flower", "-l", "info"]
+  celeryflower:
+    image: ${DOCKER_IMAGE_FLOWER}:latest
+    depends_on:
+      - db
+      - rabbitmq
+      - redis
+    ports:
+      - 5555:5555
+    env_file:
+      - .env
+    environment:
+      - SERVER_NAME=${DOMAIN?Variable not set}
+      - SERVER_HOST=https://${DOMAIN?Variable not set}
+    build:
+      context: ./
+      dockerfile: ./docker/celeryworker.dockerfile
+      args:
+        INSTALL_DEV: ${INSTALL_DEV-false}
+    command: ["celery", "-A", "celeryApp.worker", "flower", "-l", "info"]
 
-  # backend:
-  #   image: ${DOCKER_IMAGE_BACKEND}:latest
-  #   depends_on:
-  #     - db
-  #     - rabbitmq
-  #     - redis
-  #     - celeryworker
-  #   env_file:
-  #     - .env
-  #   environment:
-  #     - SERVER_NAME=${DOMAIN?Variable not set}
-  #     - SERVER_HOST=https://${DOMAIN?Variable not set}
-  #   ports:
-  #     - 8100:8100
-  #   build:
-  #     context: ./
-  #     dockerfile: ./docker/backend.dockerfile
-  #     args:
-  #       INSTALL_DEV: ${INSTALL_DEV-false}
+  backend:
+    image: ${DOCKER_IMAGE_BACKEND}:latest
+    depends_on:
+      - db
+      - rabbitmq
+      - redis
+      - celeryworker
+    env_file:
+      - .env
+    environment:
+      - SERVER_NAME=${DOMAIN?Variable not set}
+      - SERVER_HOST=https://${DOMAIN?Variable not set}
+    ports:
+      - 8100:8100
+    build:
+      context: ./
+      dockerfile: ./docker/backend.dockerfile
+      args:
+        INSTALL_DEV: ${INSTALL_DEV-false}
 
 volumes:
   app-db-data:
