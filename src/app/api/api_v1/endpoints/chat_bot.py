@@ -11,7 +11,6 @@ from datetime import datetime
 from app.core.config import settings
 from celeryApp.celery_app import celery_app
 from celeryApp.worker import commit_to_db
-from celeryApp.ethereum_worker import ethorg_retrieve
 from app.db.engine import sqlalchemy_engine
 from sqlalchemy.orm import sessionmaker
 from fastapi.responses import StreamingResponse
@@ -261,16 +260,3 @@ def _get_chat_history(session_id: str):
                                                                      content=pair_msg.system_msg_content)))
 
     return chat_history
-
-
-@router.post("/test_retrieve", status_code=200)
-def _test_retrieve(query: str):
-    """
-    Test retrieve
-    :param item:
-    :return:
-    """
-    system_response = ethorg_retrieve.delay(query)
-    result = celery_app.AsyncResult(system_response.id).get()
-
-    return str(result)
