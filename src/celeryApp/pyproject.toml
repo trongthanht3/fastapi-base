@@ -16,6 +16,7 @@ psycopg2-binary = "^2.9.9"
 alembic = "^1.13.1"
 pydantic = "^2.6.4"
 pydantic-settings = "^2.2.1"
+sqlmodel = "^0.0.16"
 
 
 [build-system]
