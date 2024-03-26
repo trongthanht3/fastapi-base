@@ -9,7 +9,7 @@ from typing import Sequence, Union
 import datetime
 from alembic import op
 import sqlalchemy as sa
-# from app.core.config import settings
+from app.core.config import settings
 
 
 # revision identifiers, used by Alembic.
@@ -49,7 +49,7 @@ def upgrade() -> None:
     op.execute(
         f"""
         INSERT INTO "user" (address, create_at, token_expire_at, is_banned, ban_at)
-        VALUES ('0x962A931ec80473C6D75653c0cB0713aeE90e3Ed2', '{str(datetime.datetime.now())}', '3024-03-22 10:32:46.144224', false, null)
+        VALUES ('{settings.SUPER_ADMIN_ADDRESS}', '{str(datetime.datetime.now())}', '3024-03-22 10:32:46.144224', false, null)
         """
     )
 

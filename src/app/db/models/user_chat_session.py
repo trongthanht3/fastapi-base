@@ -16,6 +16,7 @@ class UserChatSession(Base):
     user_id: Mapped[str] = mapped_column(String(), nullable=False)
     create_at: Mapped[str] = mapped_column(DateTime(), nullable=True)
     language_code: Mapped[str] = mapped_column(String(), nullable=False)
+    model: Mapped[str] = mapped_column(String(), nullable=False)
 
     def __repr__(self) -> str:
         return f"UserChatSession(user_session_id={self.user_session_id!r}, user_id={self.user_id!r}, create_at={self.create_at!r})"
