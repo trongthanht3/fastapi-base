@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "celeryapp"
+version = "0.1.0"
+description = ""
+authors = ["trongthanht3 <trongthanht3@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+celery = "^5.3.6"
+sqlalchemy = "^2.0.28"
+redis = "^5.0.3"
+psycopg = "^3.1.18"
+psycopg2-binary = "^2.9.9"
+alembic = "^1.13.1"
+pydantic = "^2.6.4"
+pydantic-settings = "^2.2.1"
+sqlmodel = "^0.0.16"
+tenacity = "^8.2.3"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

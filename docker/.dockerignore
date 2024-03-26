@@ -1,0 +1,17 @@
+# Ignore common Python files and directories
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+
+# Ignore Poetry specific files and directories
+.pyproject.toml
+poetry.lock
+
+# Ignore development and testing files
+.dockerignore
+Dockerfile.dev
+tests/
+.venv/
+**/.venv/
+**/**/.venv/

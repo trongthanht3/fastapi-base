@@ -21,6 +21,7 @@ if not os.path.exists("app/vectordb/colbert/indexes/ethereum-org-no-split"):
                    output="app/vectordb/colbert/indexes/ethereum-org.zip", quiet=False)
     with zipfile.ZipFile("app/vectordb/colbert/indexes/ethereum-org.zip", 'r') as zip_ref:
         zip_ref.extractall("app/vectordb/colbert/indexes/")
+        zip_ref.close()
 
 RAG = RAGPretrainedModel.from_index(
     "app/vectordb/colbert/indexes/ethereum-org-no-split")
