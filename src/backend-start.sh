@@ -1,8 +1,8 @@
 #! /usr/bin/env bash
 set -e
 
-bash /prestart.sh
+bash prestart.sh
 
-python /app/backend_pre_start.py
+poetry run python app/backend_pre_start.py
 
-python /app/main.py
+poetry run python app/main.py
