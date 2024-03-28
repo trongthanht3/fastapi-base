@@ -15,8 +15,8 @@ class PROMPTS:
     # English
     INSTRUCT_ENGLISH = """I want you to be my assistant. You follow my rules:
 
-    1. The answers are written in English.
-    2. Please give only short answers or short detailed answers. However, the main content must remain.
+    1. Please give only short answers or short detailed answers. However, the main content must remain.
+    2. If you do not know the answer to a question, you truthfully say you do not know.
 
     Let's start!
     """
@@ -40,6 +40,7 @@ class PROMPTS:
 
     1. 答えは日本語で書かれています。(Japanese)
     2. 短い回答または短い詳細な回答のみをお願いします。ただし、主要な内容は残しておく必要があります。
+    3. 質問の答えがわからない場合は、正直にわからないと答えてください。
 
     はじめましょう！
     """
@@ -63,7 +64,6 @@ class PROMPTS:
             (
                 "system",
                 """You are an assistant. And you help me to answer any question follow these rules:
-            - If the question is rude, you can pay back by being rude.
             - If the question is about blockchain (Bitcoin, Ethereum, etc.), you must use the tools to retrieve the information.
             - Sometime you will be provided some information about the answer, but if there is no extra information, just answer normally.
             - If tools return some retrieved context, use them to answer the question, but if the context does not provide the information you need, just say that you don't know.

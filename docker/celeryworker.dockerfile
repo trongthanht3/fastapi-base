@@ -9,7 +9,7 @@ RUN curl -sSL https://install.python-poetry.org | POETRY_HOME=/opt/poetry python
     poetry config virtualenvs.create false
 
 # Copy poetry.lock* in case it doesn't exist in the repo
-COPY /src/pyproject.toml ./src/poetry.lock* /
+COPY /src/celeryApp/pyproject.toml ./src/celeryApp/poetry.lock* /
 
 # Allow installing dev dependencies to run tests
 ARG INSTALL_DEV=false

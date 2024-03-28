@@ -1,20 +1,19 @@
-import uuid
+from app.core.security.ecdsa_auth import ECDSAHeader
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 from app.core.llm.google_gemini import GeminiChatSession
 from app.core.expert.ethereum_expert import ExpertEthereum
 from app.schemas.base_schemas import BaseInput, BaseSessionCreateInput, MessageSuccessResponse, \
     SessionCreateSuccessResponse, BaseResponse
-from app.db.models.session_msg import SessionMsg
-from app.db.models.user_session import UserSession
+from app.db.models.user_chat_session import UserChatSession
 from datetime import datetime
 from app.core.config import settings
 from celeryApp.celery_app import celery_app
 from celeryApp.worker import commit_to_db
-from celeryApp.ethereum_worker import ethorg_retrieve
 from app.db.engine import sqlalchemy_engine
 from sqlalchemy.orm import sessionmaker
-from fastapi.responses import StreamingResponse
+from app.schemas.auth_schemas import UserSession
+from app.utils.extend_postgres_memory import ExtendPostgresChatMessageHistory
 
 import logging
 
@@ -24,167 +23,105 @@ router = APIRouter()
 session_maker = sessionmaker(bind=sqlalchemy_engine)
 db_session = session_maker()
 
+ecdsa_header_auth = ECDSAHeader(name="token")
+
 
 @router.post("/start_new_session",
              response_model=SessionCreateSuccessResponse,
              status_code=status.HTTP_201_CREATED)
-def _start_new_session(item: BaseSessionCreateInput) -> SessionCreateSuccessResponse:
-    # Write comment in markdown
+def _start_new_session(item: BaseSessionCreateInput,
+                       user_session: UserSession = Depends(ecdsa_header_auth)) -> SessionCreateSuccessResponse:
     """
-    Start a new chat session
-    :param item:
-    :return:
+    **Start a new chat session.**
+
+    *Start a new chat session with the specified language and model.*
+
+    Parameters:
+    - `item` (`BaseSessionCreateInput`): The input for the chat session, containing the language and model.
+    - `user_session` (`UserSession`): The user session information obtained from the authentication header.
+
+    Returns:
+    - `SessionCreateSuccessResponse`: The response containing the session ID and the creation time.
     """
-    temporary_user_session_id = str(uuid.uuid4())
     create_time = datetime.today()
     # Sync DB
-    user_session_db = UserSession(user_id=temporary_user_session_id,
-                                  create_at=create_time,
-                                  language_code=item.language)
-    commit_task = commit_to_db.delay(user_session_db)
-    user_session_db = celery_app.AsyncResult(commit_task.id).get()
-    user_session_db_id = user_session_db.user_session_id
+    user_chat_session_db = UserChatSession(user_id=user_session.user_id,
+                                           create_at=create_time,
+                                           language_code=item.language,
+                                           model=item.model)
+    commit_task = commit_to_db.delay(user_chat_session_db)
+    user_chat_session_db = celery_app.AsyncResult(commit_task.id).get()
+    user_session_db_id = user_chat_session_db.user_session_id
     logger.info(
-        f"User session ID created: {user_session_db_id} with temp ID: {temporary_user_session_id}")
+        f"User session ID created: {user_session_db_id}")
 
     return SessionCreateSuccessResponse(session_id=str(user_session_db_id),
                                         created_at=str(create_time.strftime("%Y-%m-%d %H:%M:%S")))
 
 
-@router.post("/send_message", status_code=status.HTTP_200_OK, response_model=MessageSuccessResponse)
-def _send_message(item: BaseInput) -> MessageSuccessResponse:
+@router.post("/chat", status_code=status.HTTP_200_OK)
+async def _chat(item: BaseInput,
+                user_session: UserSession = Depends(ecdsa_header_auth)):
     """
-    Send message to chat
-    :param item:
-    :return:
+    **Chat API**
+
+    *Chat with AI model*
+
+    Parameters:
+    - `item` (`BaseInput`): The input for the chat session, containing the session ID and message.
+    - `user_session` (`UserSession`): The user session information obtained from the authentication header.
+
+    Returns:
+    - `BaseResponse` or `StreamingResponse`: The response from the chat session. If the input item has the streaming flag set to True, a StreamingResponse is returned. Otherwise, a BaseResponse is returned.
     """
     # Load data from db
-    user_session_db = db_session.query(UserSession).filter_by(
+    user_chat_session_db = db_session.query(UserChatSession).filter_by(
         user_session_id=item.session_id).first()
-    if user_session_db is None:
+    if (user_chat_session_db is None) or (user_chat_session_db.user_id != user_session.user_id):
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Session ID not found")
-    old_messages = db_session.query(SessionMsg).filter_by(
-        user_session_id=item.session_id).all()
-    # Sort old messages by create_at
-    old_messages.sort(key=lambda x: x.create_at)
+            status_code=status.HTTP_404_NOT_FOUND, detail="Session ID not found or not match user ID")
 
-    # Load old messages to chat session by using user_msg_content and system_msg_content
     chat_session = GeminiChatSession(item.session_id)
-    chat_session.start_new_session(language_code=user_session_db.language_code)
-    chat_session.load_message(
-        [(msg.user_msg_content, msg.system_msg_content) for msg in old_messages])
+    if item.streaming:
+        return await chat_session.send_message_stream_v2(str(item.message))
 
-    # Append new message to DB
-    new_message = SessionMsg(user_session_id=item.session_id,
-                             user_msg_content=item.message,
-                             system_msg_content="",
-                             create_at=datetime.today())
-    system_response = chat_session.send_message(str(item.message))
-    new_message.system_msg_content = system_response
-    commit_task = commit_to_db.delay(new_message)
-    new_message = celery_app.AsyncResult(commit_task.id).get()
-    logger.info(f"New message created: {new_message}")
+    system_response = await chat_session.send_message(str(item.message))
+    logger.info(f"System response: {system_response}")
 
     return MessageSuccessResponse(version=settings.API_VERSION,
-                                  success=True,
                                   created_at=str(datetime.today().strftime(
                                       "%Y-%m-%d %H:%M:%S")),
-                                  data=BaseResponse(status=200,
+                                  data=BaseResponse(msg_type='ai',
                                                     session_id=item.session_id,
-                                                    content=system_response))
+                                                    content=system_response['output']))
 
 
-@router.post("/send_message_eth_expert", status_code=200, response_model=MessageSuccessResponse)
-async def _send_message_eth_expert(item: BaseInput):
+@router.post("/chat_eth_expert", status_code=status.HTTP_200_OK, response_model=MessageSuccessResponse)
+async def _chat_eth_expert(item: BaseInput,
+                           user_session: UserSession = Depends(ecdsa_header_auth)):
     """
-    Send message to chat
-    :param item:
-    :return:
+    **Chat with an Ethereum expert.**
+
+    *Ethereum expert plugin, answer any question about Ethereum.*
+
+    Parameters:
+    - `item` (`BaseInput`): The input for the chat session, containing the session ID and message.
+    - `user_session` (`UserSession`): The user session information obtained from the authentication header.
+
+    Returns:
+    - `BaseResponse` or `StreamingResponse`: The response from the chat session. If the input item has the streaming flag set to True, a StreamingResponse is returned. Otherwise, a BaseResponse is returned.
     """
     # Load data from db
-    user_session_db = db_session.query(UserSession).filter_by(
+    user_chat_session_db = db_session.query(UserChatSession).filter_by(
         user_session_id=item.session_id).first()
-    if user_session_db is None:
-        raise HTTPException(status_code=404, detail="Session ID not found")
-    old_messages = db_session.query(SessionMsg).filter_by(
-        user_session_id=item.session_id).all()
-    # Sort old messages by create_at
-    old_messages.sort(key=lambda x: x.create_at)
+    if (user_chat_session_db is None) or (user_chat_session_db.user_id != user_session.user_id):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Session ID not found or not match user ID")
 
     # Load old messages to chat session by using user_msg_content and system_msg_content
     chat_session = ExpertEthereum(item.session_id)
-    chat_session.start_new_session(language_code=user_session_db.language_code)
-    chat_session.load_message(
-        [(msg.user_msg_content, msg.system_msg_content) for msg in old_messages])
 
-    # Append new message to DB
-    new_message = SessionMsg(user_session_id=item.session_id,
-                             user_msg_content=item.message,
-                             system_msg_content="",
-                             create_at=datetime.today())
     if item.streaming:
-        return StreamingResponse(content=chat_session.send_message_stream(str(item.message)), status_code=status.HTTP_200_OK, media_type='text/event-stream')
-    else:
-        system_response = await chat_session.send_message(str(item.message))
-        logger.info(f"System response: {system_response}")
-        content_source = []
-        if len(system_response['intermediate_steps']) > 0:
-            for item_content in system_response['intermediate_steps']:
-                for source_item in item_content[-1]:
-                    content_source.append(source_item['metadata']['source'])
-        new_message.system_msg_content = system_response['output']
-        commit_task = commit_to_db.delay(new_message)
-        new_message = celery_app.AsyncResult(commit_task.id).get()
-        logger.info(f"New message created: {new_message}")
-
-        return MessageSuccessResponse(version=settings.API_VERSION,
-                                      success=True,
-                                      created_at=str(datetime.today().strftime(
-                                          "%Y-%m-%d %H:%M:%S")),
-                                      data=BaseResponse(status=200,
-                                                        session_id=item.session_id,
-                                                        content=system_response['output'],
-                                                        content_source=content_source))
-
-
-@router.post("/beta_format", status_code=status.HTTP_200_OK, response_model=MessageSuccessResponse)
-async def _beta_format(item: BaseInput):
-    """
-    Send message to chat
-    :param item:
-    :return:
-    """
-    # Load data from db
-    user_session_db = db_session.query(UserSession).filter_by(
-        user_session_id=item.session_id).first()
-    if user_session_db is None:
-        raise HTTPException(status_code=404, detail="Session ID not found")
-    old_messages = db_session.query(SessionMsg).filter_by(
-        user_session_id=item.session_id).all()
-    # Sort old messages by create_at
-    old_messages.sort(key=lambda x: x.create_at)
-
-    # Load old messages to chat session by using user_msg_content and system_msg_content
-    chat_session = ExpertEthereum(item.session_id)
-    chat_session.start_new_session(language_code=user_session_db.language_code)
-    chat_session.load_message(
-        [(msg.user_msg_content, msg.system_msg_content) for msg in old_messages])
-
-    # Append new message to DB
-    new_message = SessionMsg(user_session_id=item.session_id,
-                             user_msg_content=item.message,
-                             system_msg_content="",
-                             create_at=datetime.today())
-    if item.streaming:
-        # base_chunk = CompletionStreamResponse(
-        #     id=str(uuid.uuid4()),
-        #     created=time.time(),
-        #     model='gpt-3.5-turbo-0125',
-        #     choices=[]
-        # )
-        # return StreamingResponse((response for response in chat_session.stream_completion(chat_session.stream_handle(item.message), base_chunk)),
-        #                             media_type="text/event-stream")
         return await chat_session.send_message_stream_v2(str(item.message))
     else:
         system_response = await chat_session.send_message(str(item.message))
@@ -194,66 +131,49 @@ async def _beta_format(item: BaseInput):
             for item_content in system_response['intermediate_steps']:
                 for source_item in item_content[-1]:
                     content_source.append(source_item['metadata']['source'])
-        new_message.system_msg_content = system_response['output']
-        commit_task = commit_to_db.delay(new_message)
-        new_message = celery_app.AsyncResult(commit_task.id).get()
-        logger.info(f"New message created: {new_message}")
 
         return MessageSuccessResponse(version=settings.API_VERSION,
-                                      success=True,
                                       created_at=str(datetime.today().strftime(
                                           "%Y-%m-%d %H:%M:%S")),
-                                      data=BaseResponse(status=200,
+                                      data=BaseResponse(msg_type='ai',
                                                         session_id=item.session_id,
                                                         content=system_response['output'],
                                                         content_source=content_source))
 
 
-@router.get("/chat_history", status_code=200)
-def _get_chat_history(session_id: str):
+@router.get("/history/{session_id}", status_code=200)
+def _get_history(session_id,
+                 user_session: UserSession = Depends(ecdsa_header_auth)):
     """
-    Get chat history
-    :param session_id:
-    :return:
+    **Get chat history**
+
+    *Get chat history of a session*
+
+    Parameters:
+    - `session_id` (`str`): The session ID.
+    - `user_session` (`UserSession`): The user session information obtained from the authentication header.
+
+    Returns:
+    - `List[MessageSuccessResponse]`: The list of chat history messages.
     """
     # Load data from db
-    user_session_db = db_session.query(UserSession).filter_by(
+    session_id = str(session_id)
+    user_chat_session_db = db_session.query(UserChatSession).filter_by(
         user_session_id=session_id).first()
-    if user_session_db is None:
-        raise HTTPException(status_code=404, detail="Session ID not found")
-    old_messages = db_session.query(SessionMsg).filter_by(
-        user_session_id=session_id).all()
-    # Sort old messages by create_at
-    old_messages.sort(key=lambda x: x.create_at)
-
+    if (user_chat_session_db is None) or (user_chat_session_db.user_id != user_session.user_id):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Session ID not found")
+    chat_history_session = ExtendPostgresChatMessageHistory(
+        session_id=session_id, connection_string=settings.POSTGRES_DATABASE_URI.unicode_string())
+    old_messages = chat_history_session.full_messages(detail=True)
     chat_history = []
-    for pair_msg in old_messages:
+    print(old_messages)
+    for msg in old_messages:
         chat_history.append(MessageSuccessResponse(version=settings.API_VERSION,
-                                                   success=True,
-                                                   created_at=str(datetime.today().strftime(
-                                                       "%Y-%m-%d %H:%M:%S")),
-                                                   data=BaseResponse(status=200,
+                                                   created_at=msg['created_at'].strftime(
+                                                       "%Y-%m-%d %H:%M:%S"),
+                                                   data=BaseResponse(msg_type=msg['message']['type'],
                                                                      session_id=session_id,
-                                                                     content=pair_msg.user_msg_content)))
-        chat_history.append(MessageSuccessResponse(version=settings.API_VERSION,
-                                                   success=True,
-                                                   created_at=str(datetime.today().strftime(
-                                                       "%Y-%m-%d %H:%M:%S")),
-                                                   data=BaseResponse(status=200,
-                                                                     session_id=session_id,
-                                                                     content=pair_msg.system_msg_content)))
+                                                                     content=msg['message']['data']['content'],)))
 
     return chat_history
-
-
-@router.post("/test_retrieve", status_code=200)
-def _test_retrieve(query: str):
-    """
-    Test retrieve
-    :param item:
-    :return:
-    """
-    system_response = ethorg_retrieve.delay(query)
-    result = celery_app.AsyncResult(system_response.id).get()
-
-    return str(result)
