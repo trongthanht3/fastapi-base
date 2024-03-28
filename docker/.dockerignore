@@ -5,8 +5,6 @@ __pycache__/
 *.pyd
 
 # Ignore Poetry specific files and directories
-.pyproject.toml
-poetry.lock
 
 # Ignore development and testing files
 .dockerignore
