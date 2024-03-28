@@ -53,7 +53,7 @@ def _start_new_session(item: BaseSessionCreateInput,
     user_chat_session_db = celery_app.AsyncResult(commit_task.id).get()
     user_session_db_id = user_chat_session_db.user_session_id
     logger.info(
-        f"User session ID created: {user_session_db_id} with temp ID: {user_session.user_id}")
+        f"User session ID created: {user_session_db_id}")
 
     return SessionCreateSuccessResponse(session_id=str(user_session_db_id),
                                         created_at=str(create_time.strftime("%Y-%m-%d %H:%M:%S")))
