@@ -30,7 +30,7 @@ class ExpertEthereum(BaseLLMSession):
         self.model_with_tools = ChatOpenAI(model="gpt-3.5-turbo-0125").bind(
             tools=[convert_to_openai_tool(tool) for tool in self.tools])
         self.memory = PostgresChatMessageHistory(
-            connection_string=settings.POSTGRES_DATABASE_URI,
+            connection_string=settings.POSTGRES_DATABASE_URI.unicode_string(),
             session_id=session_id,
         )
         self.agent = (
