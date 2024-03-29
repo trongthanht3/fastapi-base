@@ -8,14 +8,15 @@ class BaseInput(BaseModel):
     session_id: Annotated[str, Doc("User session ID")]
     message: str
     streaming: bool = False
-
+    raw: bool = False
     model_config = {
         "json_schema_extra": {
             "examples": [
                 {
                     "session_id": "123456",
                     "message": "Hello, how are you?",
-                    "streaming": False
+                    "streaming": False,
+                    "raw": False
                 },
             ]
         }
