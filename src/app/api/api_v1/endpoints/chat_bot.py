@@ -125,7 +125,7 @@ async def _chat_eth_expert(item: BaseInput,
         return await chat_session.send_message_stream_v2(str(item.message))
     else:
         system_response = await chat_session.send_message(str(item.message))
-        logger.info(f"System response: {system_response}")
+        # logger.info(f"System response: {system_response}")
         content_source = []
         if len(system_response['intermediate_steps']) > 0:
             for item_content in system_response['intermediate_steps']:
@@ -141,16 +141,41 @@ async def _chat_eth_expert(item: BaseInput,
                                                         content_source=content_source))
 
 
-@router.get("/history/{session_id}", status_code=200)
-def _get_history(session_id,
-                 user_session: UserSession = Depends(ecdsa_header_auth)):
+@router.get("/sessions", status_code=200)
+def _get_list_session(user_session: UserSession = Depends(ecdsa_header_auth)):
     """
-    **Get chat history**
+    **Get list of chat sessions**
 
-    *Get chat history of a session*
+    *Get list of chat sessions of a user*
+
+    Parameters:
+    - `user_session` (`UserSession`): The user session information obtained from the authentication header.
+
+    Returns:
+    - `List[SessionCreateSuccessResponse]`: The list of chat sessions.
+    """
+    user_chat_session_db = db_session.query(UserChatSession).filter_by(
+        user_id=user_session.user_id).all()
+    chat_sessions = []
+    for user_chat_session in user_chat_session_db:
+        chat_sessions.append(SessionCreateSuccessResponse(session_id=str(user_chat_session.user_session_id),
+                                                          created_at=str(user_chat_session.create_at.strftime("%Y-%m-%d %H:%M:%S")))
+                             )
+    return chat_sessions
+
+
+@router.get("/history/{session_id}", status_code=200)
+def _history(session_id,
+             page: int = 0,
+             page_size: int = 10,
+             user_session: UserSession = Depends(ecdsa_header_auth)):
+    """
+    *Get chat history of a session with paging*
 
     Parameters:
     - `session_id` (`str`): The session ID.
+    - `page` (`int`): The page number.
+    - `page_size` (`int`): The limit of messages per page.
     - `user_session` (`UserSession`): The user session information obtained from the authentication header.
 
     Returns:
@@ -165,15 +190,24 @@ def _get_history(session_id,
             status_code=status.HTTP_404_NOT_FOUND, detail="Session ID not found")
     chat_history_session = ExtendPostgresChatMessageHistory(
         session_id=session_id, connection_string=settings.POSTGRES_DATABASE_URI.unicode_string())
-    old_messages = chat_history_session.full_messages(detail=True)
+    if page == 0 and page_size == 0:
+        old_messages = chat_history_session.full_messages(detail=True)
+    else:
+        try:
+            old_messages = chat_history_session.messages_paging(
+                page=page, page_size=page_size)
+        except Exception as e:
+            logger.error(f"Error: {e}")
+            return HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Bad request!")
     chat_history = []
-    print(old_messages)
     for msg in old_messages:
         chat_history.append(MessageSuccessResponse(version=settings.API_VERSION,
-                                                   created_at=msg['created_at'].strftime(
+                                                   created_at=msg.created_at.strftime(
                                                        "%Y-%m-%d %H:%M:%S"),
-                                                   data=BaseResponse(msg_type=msg['message']['type'],
+                                                   data=BaseResponse(msg_type=msg.message['type'],
                                                                      session_id=session_id,
-                                                                     content=msg['message']['data']['content'],)))
+                                                                     content=msg.message['data']['content'],
+                                                                     content_source=[])))
 
     return chat_history

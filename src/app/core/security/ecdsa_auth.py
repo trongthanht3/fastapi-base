@@ -103,7 +103,7 @@ def validate_signature(signature, expire_at):
 
     if (address_session is None) or (address_session.is_banned):
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Invalid token"
+            status_code=status.HTTP_403_FORBIDDEN, detail="You are not allowed to access this resource, please contact admin@site.com"
         )
     try:
         format_string = "%Y-%m-%d"
