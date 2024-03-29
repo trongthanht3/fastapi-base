@@ -61,7 +61,14 @@ class ECDSAHeader(APIKeyHeader):
         address_session = db_session.query(User).filter(
             User.address == address_rec).first()
         db_session.reset()
-        if (address_session.is_banned) or (address_session is None):
+        if (address_session is None):
+            if self.auto_error:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN, detail="You are not allowed to access this resource, please contact admin@site.com"
+                )
+            else:
+                return None
+        if (address_session.is_banned):
             if self.auto_error:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN, detail="Banned address"
@@ -101,7 +108,10 @@ def validate_signature(signature, expire_at):
     address_session = db_session.query(User).filter(
         User.address == address_rec).first()
 
-    if (address_session is None) or (address_session.is_banned):
+    if (address_session is None):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="You are not allowed to access this resource, please contact admin@site.com")
+    if (address_session.is_banned):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="You are not allowed to access this resource, please contact admin@site.com"
         )

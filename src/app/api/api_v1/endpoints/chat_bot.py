@@ -1,6 +1,7 @@
 from app.core.security.ecdsa_auth import ECDSAHeader
 
 from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi.responses import StreamingResponse
 from app.core.llm.google_gemini import GeminiChatSession
 from app.core.expert.ethereum_expert import ExpertEthereum
 from app.schemas.base_schemas import BaseInput, BaseSessionCreateInput, MessageSuccessResponse, \
@@ -83,6 +84,8 @@ async def _chat(item: BaseInput,
 
     chat_session = GeminiChatSession(item.session_id)
     if item.streaming:
+        if item.raw:
+            return StreamingResponse(content=chat_session.send_message_stream(str(item.message)), status_code=status.HTTP_200_OK, media_type='text/event-stream')
         return await chat_session.send_message_stream_v2(str(item.message))
 
     system_response = await chat_session.send_message(str(item.message))
@@ -122,6 +125,8 @@ async def _chat_eth_expert(item: BaseInput,
     chat_session = ExpertEthereum(item.session_id)
 
     if item.streaming:
+        if item.raw:
+            return StreamingResponse(content=chat_session.send_message_stream(str(item.message)), status_code=status.HTTP_200_OK, media_type='text/event-stream')
         return await chat_session.send_message_stream_v2(str(item.message))
     else:
         system_response = await chat_session.send_message(str(item.message))
