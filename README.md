@@ -81,6 +81,7 @@ If you get stuck at `Loading segmented_maxsim_cpp extension (set COLBERT_LOAD_TO
 
 ```shell
 rm -rf /home/{user}/.cache/torch_extensions/py310_cu117
+rm -rf /home/{user}/.cache/torch_extensions/py310_cu121
 ```
 
 ### Gitlab CI/CD
