@@ -3,6 +3,9 @@ services:
   db:
     image: postgres:15
     user: postgres
+    build:
+      context: ./
+      dockerfile: ./docker/db.dockerfile
     volumes:
       - app-db-data:/var/lib/postgresql/data
     env_file:

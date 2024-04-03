@@ -1,5 +1,4 @@
-from sqlalchemy import ForeignKey
-from sqlalchemy import String, Integer, JSON, TIMESTAMP
+from sqlalchemy import ForeignKey, String, Integer, JSON, TIMESTAMP
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
@@ -17,7 +16,7 @@ class MessageStore(Base):
         Integer(), primary_key=True, autoincrement=True, nullable=False)
     session_id: Mapped[str] = mapped_column(
         String(), ForeignKey(UserChatSession.user_session_id), nullable=False)
-    message: Mapped[str] = mapped_column(JSON, nullable=False)
+    message: Mapped[str] = mapped_column(JSON(), nullable=False)
     content_source: Mapped[str] = mapped_column(String(), nullable=True)
     created_at: Mapped[str] = mapped_column(TIMESTAMP(), nullable=False)
 
