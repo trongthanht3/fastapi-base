@@ -1,6 +1,7 @@
 import os
 
 from app.core.config import settings
+from app.utils.constants import LANGUAGES
 from app.core.llm.base_llm import BaseLLMSession
 
 
@@ -10,7 +11,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 
 
 class GeminiChatSession(BaseLLMSession):
-    def __init__(self, session_id: str):
-        super().__init__(session_id)
+    def __init__(self, session_id: str, language_code: str = LANGUAGES.ENGLISH.value):
+        super().__init__(session_id=session_id, language_code=language_code)
         self.model = ChatGoogleGenerativeAI(
             model="gemini-pro", convert_system_message_to_human=True)

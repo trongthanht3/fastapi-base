@@ -82,7 +82,9 @@ async def _chat(item: BaseInput,
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Session ID not found or not match user ID")
 
-    chat_session = GeminiChatSession(item.session_id)
+    logger.info("LANGUAGE CODE IS: " + user_chat_session_db.language_code)
+    chat_session = GeminiChatSession(
+        session_id=item.session_id, language_code=user_chat_session_db.language_code)
     if item.streaming:
         if item.raw:
             return StreamingResponse(content=chat_session.send_message_stream(str(item.message)), status_code=status.HTTP_200_OK, media_type='text/event-stream')
@@ -122,7 +124,8 @@ async def _chat_eth_expert(item: BaseInput,
             status_code=status.HTTP_404_NOT_FOUND, detail="Session ID not found or not match user ID")
 
     # Load old messages to chat session by using user_msg_content and system_msg_content
-    chat_session = ExpertEthereum(item.session_id)
+    chat_session = ExpertEthereum(
+        session_id=item.session_id, language_code=user_chat_session_db.language_code)
 
     if item.streaming:
         if item.raw:

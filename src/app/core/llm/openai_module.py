@@ -7,7 +7,7 @@ if "OPENAI_API_KEY" not in os.environ:
 
 
 class OpenAIChatSession(BaseLLMSession):
-    def __init__(self, session_id: str, model_name="gpt-3.5-turbo-0125"):
-        super().__init__(session_id, model_name)
+    def __init__(self, session_id: str, model_name="gpt-3.5-turbo-0125", language_code="en"):
+        super().__init__(session_id, model_name=model_name, language_code=language_code)
         self.model = ChatOpenAI(
             model=model_name, convert_system_message_to_human=True)
