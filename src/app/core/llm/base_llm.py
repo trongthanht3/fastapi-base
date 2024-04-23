@@ -31,7 +31,8 @@ class BaseLLMSession:
         self.memory = ExtendPostgresChatMessageHistory(
             connection_string=settings.POSTGRES_DATABASE_URI.unicode_string(),
             session_id=session_id,
-            k=5
+            k=5,
+            retrieval_related_messages=True,
         )
         self.chain = (
             {
@@ -89,6 +90,7 @@ class BaseLLMSession:
         return self.prompt
 
     async def send_message(self, message: str):
+        self.memory.last_message = str(message)
         return await self.runable.ainvoke(
             {"input": message},
             config={"configurable": {"session_id": self.session_id}}
@@ -109,6 +111,7 @@ class BaseLLMSession:
         return self.memory
 
     async def send_message_stream(self, message: str):
+        self.memory.last_message = str(message)
         async for event in self.runable.astream_events(
             {"input": message},
             config={"configurable": {"session_id": self.session_id}},
@@ -124,6 +127,7 @@ class BaseLLMSession:
                     yield content
 
     async def send_message_stream_v2(self, message: str):
+        self.memory.last_message = str(message)
         base_chunk = CompletionStreamResponse(
             id=str(uuid.uuid4()),
             created=int(time.time()),

@@ -124,6 +124,8 @@ services:
       dockerfile: ./docker/backend.dockerfile
       args:
         INSTALL_DEV: ${INSTALL_DEV-false}
+    volumes:
+      - ./pretrain:/app/vectordb
 
 volumes:
   app-db-data:
