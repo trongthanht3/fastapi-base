@@ -13,6 +13,12 @@ class User(Base):
 
     user_id: Mapped[int] = mapped_column(
         Integer(), primary_key=True, autoincrement=True, nullable=False)
+    username: Mapped[str] = mapped_column(
+        String(), nullable=False, unique=True
+    )
+    password_hash: Mapped[str] = mapped_column(
+        String(), nullable=False
+    )
     address: Mapped[str] = mapped_column(String(), nullable=False)
     create_at: Mapped[str] = mapped_column(DateTime(), nullable=True)
     token_expire_at: Mapped[str] = mapped_column(DateTime(), nullable=True)
@@ -20,4 +26,4 @@ class User(Base):
     ban_at: Mapped[str] = mapped_column(DateTime(), nullable=True)
 
     def __repr__(self) -> str:
-        return f"User(id={self.id!r}, address={self.address!r}, create_at={self.create_at!r}, token_expire_at={self.token_expire_at!r}, is_banned={self.is_banned!r}, ban_at={self.ban_at!r})"
+        return f"User(user_id={self.user_id!r}, username={self.username!r}, password_hash={self.password_hash!r}, address={self.address!r}, create_at={self.create_at!r}, token_expire_at={self.token_expire_at!r}, is_banned={self.is_banned!r}, ban_at={self.ban_at!r})"

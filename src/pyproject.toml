@@ -6,7 +6,7 @@ authors = ["Thân Trọng Thành <trongthanht3@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "3.10.12"
 pydantic = {extras = ["email"], version = "^2.5.2"}
 uvicorn = "^0.24.0.post1"
 fastapi = "0.109.1"
@@ -14,7 +14,7 @@ pydantic-settings = "^2.1.0"
 sqlmodel = "^0.0.14"
 loguru = "^0.7.2"
 tenacity = "^8.2.3"
-psycopg = "^3.1.15"
+psycopg = {extras = ["binary", "pool"], version = "^3.2.3"}
 psycopg2-binary = "^2.9.9"
 celery = {extras = ["redis"], version = "^5.3.6"}
 raven = "^6.10.0"
@@ -35,6 +35,9 @@ faiss-cpu = "^1.8.0"
 gdown = "^5.1.0"
 python-multipart = "^0.0.9"
 web3 = "^6.15.1"
+passlib = "^1.7.4"
+pyjwt = "^2.10.1"
+pgvector = "^0.3.6"
 
 
 [build-system]

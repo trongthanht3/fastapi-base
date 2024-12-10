@@ -7,3 +7,4 @@
 src/app/vectordb/
 ./logs/
 logs/*
+./**/__pycache__

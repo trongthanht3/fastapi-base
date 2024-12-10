@@ -1,5 +1,7 @@
 import json
 from typing import Iterable
+
+from langchain_google_genai import ChatGoogleGenerativeAI
 from app.schemas.stream_schemas import CompletionChoice, CompletionStreamResponse
 from app.utils.constants import LANGUAGES, PROMPTS
 from langchain_core.runnables.history import RunnableWithMessageHistory
@@ -21,12 +23,21 @@ logger = logging.getLogger('uvicorn')
 
 
 class BaseLLMSession:
-    def __init__(self, session_id: str, model_name: str = 'gpt-3.5-turbo-0125', language_code: str = LANGUAGES.ENGLISH.value):
+    def __init__(self, session_id: str,
+                 model_type: str = 'gemini',
+                 model_name: str = 'gpt-3.5-turbo-0125',
+                 language_code: str = LANGUAGES.ENGLISH.value):
         self.session_id = None
         self.language_code = None
 
-        self.model = ChatOpenAI(
-            model=model_name, streaming=True, temperature=0)
+        self.model = None
+        if model_type == "gemini":
+            self.model = ChatGoogleGenerativeAI(
+                model="gemini-1.5-flash", convert_system_message_to_human=True)
+        else:
+            self.model = ChatOpenAI(
+                model=model_name, streaming=True, temperature=0)
+        # self.model = None
         self.prompt = self.get_prompt(language_code)
         self.memory = ExtendPostgresChatMessageHistory(
             connection_string=settings.POSTGRES_DATABASE_URI.unicode_string(),

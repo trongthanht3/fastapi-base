@@ -1,9 +1,11 @@
+from typing import Annotated
 from app.core.security.ecdsa_auth import ECDSAHeader
 
 from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.responses import StreamingResponse
 from app.core.llm.google_gemini import GeminiChatSession
 from app.core.expert.ethereum_expert import ExpertEthereum
+from app.core.security.oauth2_auth import get_current_active_user
 from app.schemas.base_schemas import BaseInput, BaseSessionCreateInput, MessageSuccessResponse, \
     SessionCreateSuccessResponse, BaseResponse
 from app.db.models.user_chat_session import UserChatSession
@@ -31,7 +33,7 @@ ecdsa_header_auth = ECDSAHeader(name="token")
              response_model=SessionCreateSuccessResponse,
              status_code=status.HTTP_201_CREATED)
 def _start_new_session(item: BaseSessionCreateInput,
-                       user_session: UserSession = Depends(ecdsa_header_auth)) -> SessionCreateSuccessResponse:
+                       user_session: Annotated[UserSession, Depends(get_current_active_user)]) -> SessionCreateSuccessResponse:
     """
     **Start a new chat session.**
 
@@ -62,7 +64,7 @@ def _start_new_session(item: BaseSessionCreateInput,
 
 @router.post("/chat", status_code=status.HTTP_200_OK)
 async def _chat(item: BaseInput,
-                user_session: UserSession = Depends(ecdsa_header_auth)):
+                user_session: Annotated[UserSession, Depends(get_current_active_user)]):
     """
     **Chat API**
 
@@ -103,7 +105,7 @@ async def _chat(item: BaseInput,
 
 @router.post("/chat_eth_expert", status_code=status.HTTP_200_OK, response_model=MessageSuccessResponse)
 async def _chat_eth_expert(item: BaseInput,
-                           user_session: UserSession = Depends(ecdsa_header_auth)):
+                           user_session: Annotated[UserSession, Depends(get_current_active_user)]):
     """
     **Chat with an Ethereum expert.**
 
@@ -150,7 +152,7 @@ async def _chat_eth_expert(item: BaseInput,
 
 
 @router.get("/sessions", status_code=200)
-def _get_list_session(user_session: UserSession = Depends(ecdsa_header_auth)):
+def _get_list_session(user_session: Annotated[UserSession, Depends(get_current_active_user)]):
     """
     **Get list of chat sessions**
 
@@ -173,10 +175,12 @@ def _get_list_session(user_session: UserSession = Depends(ecdsa_header_auth)):
 
 
 @router.get("/history/{session_id}", status_code=200)
-def _history(session_id,
-             page: int = 0,
-             page_size: int = 10,
-             user_session: UserSession = Depends(ecdsa_header_auth)):
+def _history(
+    user_session: Annotated[UserSession, Depends(get_current_active_user)],
+    session_id,
+    page: int = 0,
+    page_size: int = 10,
+):
     """
     *Get chat history of a session with paging*
 

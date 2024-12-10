@@ -1,4 +1,7 @@
-from fastapi import APIRouter
+from typing import Annotated
+from fastapi import APIRouter, Depends
+from app.core.security.oauth2_auth import get_current_active_user
+from app.db.models.user import User
 from celeryApp.worker import get_time
 from celeryApp.celery_app import celery_app
 
@@ -12,7 +15,7 @@ router = APIRouter()
 
 
 @router.get("/hello")
-def hello():
+def hello(current_user: Annotated[User, Depends(get_current_active_user)]):
     return {"hello": "world"}
 
 
@@ -25,9 +28,9 @@ def validate_token(token: str):
 #     return {"key": key}
 
 @router.get("/hello/{name}")
-def hello_name(name: str):
+def hello_name():
     logger.info("hello_name")
-    return {"hello": name}
+    return {"hello": "name"}
 
 
 @router.post("/get_time")

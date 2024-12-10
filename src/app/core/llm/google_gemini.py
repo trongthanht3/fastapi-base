@@ -12,6 +12,6 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 
 class GeminiChatSession(BaseLLMSession):
     def __init__(self, session_id: str, language_code: str = LANGUAGES.ENGLISH.value):
-        super().__init__(session_id=session_id, language_code=language_code)
+        super().__init__(model_type="gemini", session_id=session_id, language_code=language_code)
         self.model = ChatGoogleGenerativeAI(
-            model="gemini-pro", convert_system_message_to_human=True)
+            model="gemini-1.5-flash", convert_system_message_to_human=True)
